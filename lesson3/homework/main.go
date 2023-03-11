@@ -120,9 +120,11 @@ func readBytes(options *Options, n int) ([]byte, error) {
 }
 
 func writeBytes(options *Options, buff []byte) {
-	if _, err := io.WriteString(options.To, string(buff)); err != nil {
-		panic(err)
-	}
+	_, err := io.WriteString(options.To, string(buff))
+	//if _, err := io.WriteString(options.To, string(buff)); err != nil {
+	fmt.Println(options.To, string(buff), err)
+	//panic(err)
+	//}
 }
 
 func TrimLimit(options *Options, len int) int {
