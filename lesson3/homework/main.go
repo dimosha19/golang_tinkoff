@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
 )
@@ -78,7 +77,7 @@ func readBytes(options *Options, n int) ([]byte, error) {
 
 func writeBytes(options *Options, buff []byte) {
 	if _, err := io.WriteString(options.To, string(buff)); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
