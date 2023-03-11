@@ -61,7 +61,7 @@ func InitOptionInputOutput(options *Options) {
 	}
 	if options.FileOutput != "" {
 		if _, err := os.Stat(options.FileOutput); errors.Is(err, os.ErrNotExist) {
-			options.To, err = os.OpenFile(options.FileOutput, os.O_RDONLY|os.O_CREATE, 0644)
+			options.To, err = os.OpenFile(options.FileOutput, os.O_RDONLY|os.O_CREATE, 0777)
 			check(err)
 		} else {
 			panic(errors.New("file already exists"))
