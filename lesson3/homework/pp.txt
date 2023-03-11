@@ -1,18 +1,14 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"os"
 )
 
 const DEFAULT_BLOCK_SIZE int = 1024
-const DEFAULT_OFFSET int = 0
-const DEFAULT_LIMIT int = -1
 
 type Options struct {
 	FileInput  string
@@ -33,17 +29,10 @@ func optionsInit(options *Options) {
 		options.From = os.Stdin
 	}
 	if options.FileOutput != "" {
-		if _, err := os.Stat(options.FileOutput); errors.Is(err, os.ErrNotExist) {
-			options.To, err = os.OpenFile(options.FileOutput, os.O_RDONLY|os.O_CREATE, 0644)
-			check(err)
-		} else {
-			panic(errors.New("File already exists"))
-		}
+		options.To, err = os.OpenFile(options.FileOutput, os.O_CREATE, 0755)
+		check(err)
 	} else {
 		options.To = os.Stdout
-	}
-	if options.Offset < 0 {
-		panic(errors.New("offset must be positiv"))
 	}
 }
 
@@ -52,8 +41,8 @@ func ParseFlags() (*Options, error) {
 
 	flag.StringVar(&opts.FileInput, "from", "", "file to read. by default - stdin")
 	flag.StringVar(&opts.FileOutput, "to", "", "file to write. by default - stdout")
-	flag.IntVar(&opts.Offset, "offset", DEFAULT_OFFSET, "number of bytes to skip when copying")
-	flag.IntVar(&opts.Limit, "limit", DEFAULT_LIMIT, "the maximum number of bytes to read")
+	flag.IntVar(&opts.Offset, "offset", 0, "number of bytes to skip when copying")
+	flag.IntVar(&opts.Limit, "limit", -1, "the maximum number of bytes to read")
 	flag.IntVar(&opts.BlockSize, "block-size", DEFAULT_BLOCK_SIZE, "the size of one block in bytes when reading and writing")
 
 	flag.Parse()
@@ -96,19 +85,6 @@ func TrimLimit(options *Options, len int) int {
 	return len
 }
 
-func skipOffset(options *Options) {
-	if options.Offset != 0 {
-		for options.Offset != 0 {
-			block := int(math.Min(float64(options.Offset), float64(options.BlockSize)))
-			res, err := readBytes(options, block)
-			if err != nil {
-				panic(err)
-			}
-			options.Offset -= len(res)
-		}
-	}
-}
-
 func readInit(options *Options) {
 	res, err := readBytes(options, options.BlockSize)
 	res = res[:TrimLimit(options, len(res))]
@@ -130,6 +106,5 @@ func main() {
 	}
 
 	optionsInit(opts)
-	skipOffset(opts)
 	readInit(opts)
 }
