@@ -61,8 +61,11 @@ func InitOptionInputOutput(options *Options) {
 	}
 	if options.FileOutput != "" {
 		if _, err := os.Stat(options.FileOutput); errors.Is(err, os.ErrNotExist) {
-			options.To, err = os.OpenFile(options.FileOutput, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
-			check(err)
+			options.To, err = os.Create(options.FileOutput)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		} else {
 			panic(errors.New("file already exists"))
 		}
@@ -120,11 +123,11 @@ func readBytes(options *Options, n int) ([]byte, error) {
 }
 
 func writeBytes(options *Options, buff []byte) {
-	_, err := io.WriteString(options.To, string(buff))
-	//if _, err := io.WriteString(options.To, string(buff)); err != nil {
-	fmt.Println(options.To, string(buff), err)
-	//panic(err)
-	//}
+	//_, err := io.WriteString(options.To, string(buff))
+	if _, err := io.WriteString(options.To, string(buff)); err != nil {
+		//fmt.Println(options.To, string(buff), err)
+		panic(err)
+	}
 }
 
 func TrimLimit(options *Options, len int) int {
