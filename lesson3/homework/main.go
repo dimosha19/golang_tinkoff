@@ -7,11 +7,12 @@ import (
 	"io"
 	"math"
 	"os"
+	"strings"
 )
 
-const DEFAULT_BLOCK_SIZE int = 1024
-const DEFAULT_OFFSET int = 0
-const DEFAULT_LIMIT int = -1
+const DefaultBlockSize int = 1024
+const DefaultOffset int = 0
+const DefaultLimit int = -1
 
 type Options struct {
 	FileInput  string
@@ -21,9 +22,36 @@ type Options struct {
 	BlockSize  int
 	From       io.Reader
 	To         io.Writer
+	ConvStr    string
+	Conv       struct {
+		UpperCase  bool
+		LowerCase  bool
+		TrimSpaces bool
+	}
 }
 
-func optionsInit(options *Options) {
+func InitOptionConv(options *Options) {
+	options.Conv.LowerCase = false
+	options.Conv.UpperCase = false
+	options.Conv.TrimSpaces = false
+	if options.ConvStr != "" {
+		s := strings.Split(options.ConvStr, ",")
+		for i := 0; i < len(s); i++ {
+			switch s[i] {
+			case "upper_case":
+				options.Conv.UpperCase = true
+			case "lower_case":
+				options.Conv.LowerCase = true
+			case "trim_spaces":
+				options.Conv.TrimSpaces = true
+			default:
+				panic(errors.New("invalid -conv arguments"))
+			}
+		}
+	}
+}
+
+func InitOptionInputOutput(options *Options) {
 	var err error
 	if options.FileInput != "" {
 		options.From, err = os.Open(options.FileInput)
@@ -36,13 +64,21 @@ func optionsInit(options *Options) {
 			options.To, err = os.OpenFile(options.FileOutput, os.O_RDONLY|os.O_CREATE, 0644)
 			check(err)
 		} else {
-			panic(errors.New("File already exists"))
+			panic(errors.New("file already exists"))
 		}
 	} else {
 		options.To = os.Stdout
 	}
+}
+
+func optionsInit(options *Options) {
+	InitOptionInputOutput(options)
+	InitOptionConv(options)
 	if options.Offset < 0 {
 		panic(errors.New("offset must be positiv"))
+	}
+	if options.Conv.UpperCase && options.Conv.LowerCase {
+		panic(errors.New("lower_case and upper_case cannot be paramentary at the same time"))
 	}
 }
 
@@ -51,9 +87,10 @@ func ParseFlags() (*Options, error) {
 
 	flag.StringVar(&opts.FileInput, "from", "", "file to read. by default - stdin")
 	flag.StringVar(&opts.FileOutput, "to", "", "file to write. by default - stdout")
-	flag.IntVar(&opts.Offset, "offset", DEFAULT_OFFSET, "number of bytes to skip when copying")
-	flag.IntVar(&opts.Limit, "limit", DEFAULT_LIMIT, "the maximum number of bytes to read")
-	flag.IntVar(&opts.BlockSize, "block-size", DEFAULT_BLOCK_SIZE, "the size of one block in bytes when reading and writing")
+	flag.IntVar(&opts.Offset, "offset", DefaultOffset, "number of bytes to skip when copying")
+	flag.IntVar(&opts.Limit, "limit", DefaultLimit, "the maximum number of bytes to read")
+	flag.IntVar(&opts.BlockSize, "block-size", DefaultBlockSize, "the size of one block in bytes when reading and writing")
+	flag.StringVar(&opts.ConvStr, "conv", "", "UpperCase / LowerCase / TrimSpaces")
 
 	flag.Parse()
 
@@ -66,11 +103,18 @@ func check(e error) {
 	}
 }
 
+func TrimSpaces() {
+
+}
+
 func readBytes(options *Options, n int) ([]byte, error) {
 	res := make([]byte, n)
 	bt, err := io.ReadAtLeast(options.From, res, 1)
 	if bt < n {
 		return res[:bt], err
+	}
+	if options.Conv.TrimSpaces {
+
 	}
 	return res, err
 }
@@ -108,7 +152,7 @@ func skipOffset(options *Options) {
 	}
 }
 
-func readInit(options *Options) {
+func RWInit(options *Options) {
 	res, err := readBytes(options, options.BlockSize)
 	res = res[:TrimLimit(options, len(res))]
 	for err != io.EOF && len(res) != 0 {
@@ -130,5 +174,5 @@ func main() {
 
 	optionsInit(opts)
 	skipOffset(opts)
-	readInit(opts)
+	RWInit(opts)
 }
