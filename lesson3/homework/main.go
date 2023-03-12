@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -8,11 +9,14 @@ import (
 	"math"
 	"os"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 const DefaultBlockSize int = 1024
 const DefaultOffset int = 0
 const DefaultLimit int = -1
+const TempFileName string = "temp.txt"
 
 type Options struct {
 	FileInput  string
@@ -22,6 +26,7 @@ type Options struct {
 	BlockSize  int
 	From       io.Reader
 	To         io.Writer
+	TempFile   *os.File
 	ConvStr    string
 	Conv       struct {
 		UpperCase  bool
@@ -48,6 +53,12 @@ func InitOptionConv(options *Options) {
 				panic(errors.New("invalid -conv arguments"))
 			}
 		}
+	}
+	// Если нужно обрезать пробелы, то нужен вспомогательный файл
+	if options.Conv.TrimSpaces {
+		var err error
+		options.TempFile, err = os.Create(TempFileName)
+		check(err)
 	}
 }
 
@@ -106,27 +117,77 @@ func check(e error) {
 	}
 }
 
-func TrimSpaces() {
+func FindTextBounds() (int, int) {
+	pp, _ := os.Open(TempFileName)
+	b := make([]byte, 1)
+	flagg := false
+	i := 0
+	lbound := 0
+	rbound := 0
+	for {
+		_, err := pp.Read(b)
+		chr, _ := utf8.DecodeRune(b)
+		if !unicode.IsSpace(chr) && !flagg {
+			flagg = true
+			lbound = i
+			rbound = i
+		} else if !unicode.IsSpace(chr) && flagg {
+			rbound = i
+		}
+		if err != nil && !errors.Is(err, io.EOF) {
+			return 0, 0
+		}
+		if err == io.EOF {
+			break
+		}
+		i++
+	}
+	defer func(pp *os.File) {
+		err := pp.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(pp)
+	return lbound, rbound + 1
+	//ff, _ := os.Stat("temp.txt")
+	//rbound := ff.Size()
+	//offset := 1
+	//blockSize := int(math.Max(float64(rbound), float64(options.BlockSize)))
 
+}
+
+func ToLower(slice []byte) []byte {
+	return bytes.ToLower(slice)
+}
+
+func ToUpper(slice []byte) []byte {
+	return bytes.ToUpper(slice)
 }
 
 func readBytes(options *Options, n int) ([]byte, error) {
 	res := make([]byte, n)
 	bt, err := io.ReadAtLeast(options.From, res, 1)
+	if options.Conv.LowerCase && !options.Conv.TrimSpaces {
+		res = ToLower(res)
+	}
+	if options.Conv.UpperCase && !options.Conv.TrimSpaces {
+		res = ToUpper(res)
+	}
 	if bt < n {
 		return res[:bt], err
-	}
-	if options.Conv.TrimSpaces {
-
 	}
 	return res, err
 }
 
 func writeBytes(options *Options, buff []byte) {
-	//_, err := io.WriteString(options.To, string(buff))
-	if _, err := io.WriteString(options.To, string(buff)); err != nil {
-		//fmt.Println(options.To, string(buff), err)
-		panic(err)
+	if options.Conv.TrimSpaces {
+		if _, err := io.WriteString(options.TempFile, string(buff)); err != nil {
+			panic(err)
+		}
+	} else {
+		if _, err := io.WriteString(options.To, string(buff)); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -170,6 +231,18 @@ func RWInit(options *Options) {
 	}
 }
 
+func PostProcessing(options *Options, l int, r int) {
+	options.FileInput = TempFileName
+	InitOptionInputOutput(options)
+	options.Offset = l
+	options.Limit = r - l
+	options.Conv.TrimSpaces = false
+	skipOffset(options)
+	RWInit(options)
+	//e := os.Remove(TempFileName)
+	//check(e)
+}
+
 func main() {
 	opts, err := ParseFlags()
 	if err != nil {
@@ -180,4 +253,8 @@ func main() {
 	optionsInit(opts)
 	skipOffset(opts)
 	RWInit(opts)
+	if opts.Conv.TrimSpaces {
+		l, r := FindTextBounds()
+		PostProcessing(opts, l, r)
+	}
 }
