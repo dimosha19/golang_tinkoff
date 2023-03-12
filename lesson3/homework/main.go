@@ -192,10 +192,6 @@ func FindTextBounds() (int, int) {
 		}
 	}(pp)
 	return lbound, rbound + 1
-	//ff, _ := os.Stat("temp.txt")
-	//rbound := ff.Size()
-	//offset := 1
-	//blockSize := int(math.Max(float64(rbound), float64(options.BlockSize)))
 
 }
 
@@ -283,8 +279,6 @@ func PostProcessing(options *Options, l int, r int) {
 	options.Conv.TrimSpaces = false
 	skipOffset(options)
 	RWInit(options)
-	//e := os.Remove(TempFileName)
-	//check(e)
 }
 
 func main() {
