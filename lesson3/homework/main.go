@@ -137,20 +137,6 @@ func ValidateBytesArray(bytes []byte) []byte {
 	return res
 }
 
-func skipLSEP(plp *os.File) int {
-	//fsymbol := []byte(" ")
-	b := make([]byte, 6)
-	_, err := plp.Read(b)
-	chr, _ := utf8.DecodeRune(b)
-	if !unicode.IsSpace(chr) {
-		return 6
-	}
-	if err == io.EOF {
-		return 0
-	}
-	return 0
-}
-
 func FindTextBounds() (int, int) {
 	pp, _ := os.Open(TempFileName)
 	plp := bufio.NewReader(pp)
@@ -160,16 +146,6 @@ func FindTextBounds() (int, int) {
 	rbound := 0
 	for {
 		rn, inc, err := plp.ReadRune()
-		if rn == '\\' {
-			i += skipLSEP(pp)
-			for j := 0; j <= 4; j++ {
-				_, _, err := plp.ReadRune()
-				if err == io.EOF {
-					break
-				}
-			}
-			continue
-		}
 		if !unicode.IsSpace(rn) && !flagg {
 			flagg = true
 			lbound = i
