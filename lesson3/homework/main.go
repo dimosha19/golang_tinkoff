@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"flag"
@@ -17,6 +18,8 @@ const DefaultBlockSize int = 1024
 const DefaultOffset int = 0
 const DefaultLimit int = -1
 const TempFileName string = "temp.txt"
+
+var MiniBuff []byte
 
 type Options struct {
 	FileInput  string
@@ -117,21 +120,61 @@ func check(e error) {
 	}
 }
 
+func ValidateBytesArray(bytes []byte) []byte {
+	var res []byte
+	s := append(MiniBuff, bytes...)
+	for i := 1; i <= len(s); i++ {
+		a, _ := utf8.DecodeRune(s[:i])
+		if a != utf8.RuneError {
+			MiniBuff = s[i:]
+			res = s[:i]
+			if i == len(s) {
+				return res
+			}
+		}
+	}
+	MiniBuff = append(MiniBuff, bytes...)
+	return res
+}
+
+func skipLSEP(plp *os.File) int {
+	//fsymbol := []byte(" ")
+	b := make([]byte, 6)
+	_, err := plp.Read(b)
+	chr, _ := utf8.DecodeRune(b)
+	if !unicode.IsSpace(chr) {
+		return 6
+	}
+	if err == io.EOF {
+		return 0
+	}
+	return 0
+}
+
 func FindTextBounds() (int, int) {
 	pp, _ := os.Open(TempFileName)
-	b := make([]byte, 1)
+	plp := bufio.NewReader(pp)
 	flagg := false
 	i := 0
 	lbound := 0
 	rbound := 0
 	for {
-		_, err := pp.Read(b)
-		chr, _ := utf8.DecodeRune(b)
-		if !unicode.IsSpace(chr) && !flagg {
+		rn, inc, err := plp.ReadRune()
+		if rn == '\\' {
+			i += skipLSEP(pp)
+			for j := 0; j <= 4; j++ {
+				_, _, err := plp.ReadRune()
+				if err == io.EOF {
+					break
+				}
+			}
+			continue
+		}
+		if !unicode.IsSpace(rn) && !flagg {
 			flagg = true
 			lbound = i
 			rbound = i
-		} else if !unicode.IsSpace(chr) && flagg {
+		} else if !unicode.IsSpace(rn) && flagg && err != io.EOF {
 			rbound = i
 		}
 		if err != nil && !errors.Is(err, io.EOF) {
@@ -140,7 +183,7 @@ func FindTextBounds() (int, int) {
 		if err == io.EOF {
 			break
 		}
-		i++
+		i += inc
 	}
 	defer func(pp *os.File) {
 		err := pp.Close()
@@ -167,12 +210,6 @@ func ToUpper(slice []byte) []byte {
 func readBytes(options *Options, n int) ([]byte, error) {
 	res := make([]byte, n)
 	bt, err := io.ReadAtLeast(options.From, res, 1)
-	if options.Conv.LowerCase && !options.Conv.TrimSpaces {
-		res = ToLower(res)
-	}
-	if options.Conv.UpperCase && !options.Conv.TrimSpaces {
-		res = ToUpper(res)
-	}
 	if bt < n {
 		return res[:bt], err
 	}
@@ -185,6 +222,13 @@ func writeBytes(options *Options, buff []byte) {
 			panic(err)
 		}
 	} else {
+		buff = ValidateBytesArray(buff)
+		if options.Conv.LowerCase && !options.Conv.TrimSpaces {
+			buff = ToLower(buff)
+		}
+		if options.Conv.UpperCase && !options.Conv.TrimSpaces {
+			buff = ToUpper(buff)
+		}
 		if _, err := io.WriteString(options.To, string(buff)); err != nil {
 			panic(err)
 		}
@@ -256,5 +300,10 @@ func main() {
 	if opts.Conv.TrimSpaces {
 		l, r := FindTextBounds()
 		PostProcessing(opts, l, r)
+	}
+	if len(MiniBuff) > 0 {
+		if _, err := io.WriteString(opts.To, string(MiniBuff)); err != nil {
+			panic(err)
+		}
 	}
 }
