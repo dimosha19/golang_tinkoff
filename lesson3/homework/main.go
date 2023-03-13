@@ -28,7 +28,7 @@ type Options struct {
 	Limit      int
 	BlockSize  int
 	From       io.Reader
-	To         io.Writer
+	To         OffsetWriter
 	TempFile   *os.File
 	ConvStr    string
 	Conv       struct {
@@ -38,7 +38,7 @@ type Options struct {
 	}
 }
 
-func InitOptionConv(options *Options) {
+func InitOptionConv(options *Options, create bool) {
 	options.Conv.LowerCase = false
 	options.Conv.UpperCase = false
 	options.Conv.TrimSpaces = false
@@ -58,7 +58,7 @@ func InitOptionConv(options *Options) {
 		}
 	}
 	// Если нужно обрезать пробелы, то нужен вспомогательный файл
-	if options.Conv.TrimSpaces {
+	if options.Conv.TrimSpaces && create {
 		var err error
 		options.TempFile, err = os.Create(TempFileName)
 		check(err)
@@ -75,7 +75,8 @@ func InitOptionInputOutput(options *Options) {
 	}
 	if options.FileOutput != "" {
 		if _, err := os.Stat(options.FileOutput); errors.Is(err, os.ErrNotExist) {
-			options.To, err = os.Create(options.FileOutput)
+			outputStream, err := os.Create(options.FileOutput)
+			options.To = OffsetWriter{outputStream, int64(options.Offset)}
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -84,13 +85,31 @@ func InitOptionInputOutput(options *Options) {
 			panic(errors.New("file already exists"))
 		}
 	} else {
-		options.To = os.Stdout
+		options.To = OffsetWriter{os.Stdout, int64(options.Offset)}
 	}
 }
 
-func optionsInit(options *Options) {
+type OffsetWriter struct {
+	W io.Writer
+	N int64
+}
+
+func (p *OffsetWriter) Write(b []byte) (int, error) {
+	m := int64(math.Min(float64(len(b)), float64(p.N)))
+	p.N -= m
+	return io.WriteString(p.W, string(b[m:]))
+}
+
+func (p *OffsetWriter) GetN() int64 {
+	return p.N
+}
+
+func optionsInit(options *Options, create bool) {
 	InitOptionInputOutput(options)
-	InitOptionConv(options)
+	InitOptionConv(options, create)
+	if options.Limit != -1 {
+		options.From = io.LimitReader(options.From, int64(options.Limit+options.Offset))
+	}
 	if options.Offset < 0 {
 		panic(errors.New("offset must be positiv"))
 	}
@@ -179,81 +198,58 @@ func ToUpper(slice []byte) []byte {
 	return bytes.ToUpper(slice)
 }
 
-func readBytes(options *Options, n int) ([]byte, error) {
+func readBytes(reader io.Reader, n int) ([]byte, error) {
 	res := make([]byte, n)
-	bt, err := io.ReadAtLeast(options.From, res, 1)
+	bt, err := io.ReadAtLeast(reader, res, 1)
 	if bt < n {
 		return res[:bt], err
 	}
 	return res, err
 }
 
+func ConvertCase(b []byte, lower bool, upper bool) []byte {
+	if !lower && !upper {
+		return b
+	} else if lower {
+		return ToLower(b)
+	} else {
+		return ToUpper(b)
+	}
+}
+
 func writeBytes(options *Options, buff []byte) {
 	if options.Conv.TrimSpaces {
-		if _, err := io.WriteString(options.TempFile, string(buff)); err != nil {
+		if _, err := io.WriteString(&OffsetWriter{options.TempFile, int64(options.Offset)}, string(buff)); err != nil {
 			panic(err)
 		}
 	} else {
 		buff = ValidateBytesArray(buff)
-		if options.Conv.LowerCase && !options.Conv.TrimSpaces {
-			buff = ToLower(buff)
-		}
-		if options.Conv.UpperCase && !options.Conv.TrimSpaces {
-			buff = ToUpper(buff)
-		}
-		if _, err := io.WriteString(options.To, string(buff)); err != nil {
+		buff = ConvertCase(buff, options.Conv.LowerCase, options.Conv.UpperCase)
+		if _, err := io.WriteString(&options.To, string(buff)); err != nil {
 			panic(err)
-		}
-	}
-}
-
-func TrimLimit(options *Options, len int) int {
-	if options.Limit == -1 {
-		return len
-	}
-	if options.Limit >= len {
-		options.Limit -= len
-	} else {
-		remainder := options.Limit
-		options.Limit = 0
-		return remainder
-	}
-	return len
-}
-
-func skipOffset(options *Options) {
-	if options.Offset != 0 {
-		for options.Offset != 0 {
-			block := int(math.Min(float64(options.Offset), float64(options.BlockSize)))
-			res, err := readBytes(options, block)
-			if err != nil {
-				panic(err)
-			}
-			options.Offset -= len(res)
 		}
 	}
 }
 
 func RWInit(options *Options) {
-	res, err := readBytes(options, options.BlockSize)
-	res = res[:TrimLimit(options, len(res))]
-	for err != io.EOF && len(res) != 0 {
-		writeBytes(options, res)
-		if options.Limit == 0 {
-			return
+	var err error
+	var res []byte
+	bflag := false
+	for err != io.EOF && len(res) != 0 || !bflag {
+		bflag = true
+		res, err = readBytes(options.From, options.BlockSize)
+		if err != io.EOF {
+			writeBytes(options, res)
 		}
-		res, err = readBytes(options, options.BlockSize)
-		res = res[:TrimLimit(options, len(res))]
 	}
 }
 
 func PostProcessing(options *Options, l int, r int) {
 	options.FileInput = TempFileName
-	InitOptionInputOutput(options)
 	options.Offset = l
 	options.Limit = r - l
+	optionsInit(options, false)
 	options.Conv.TrimSpaces = false
-	skipOffset(options)
 	RWInit(options)
 }
 
@@ -264,16 +260,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	optionsInit(opts)
-	skipOffset(opts)
+	optionsInit(opts, true)
 	RWInit(opts)
+
 	if opts.Conv.TrimSpaces {
 		l, r := FindTextBounds()
 		PostProcessing(opts, l, r)
 	}
 	if len(MiniBuff) > 0 {
-		if _, err := io.WriteString(opts.To, string(MiniBuff)); err != nil {
+		if _, err := io.WriteString(&opts.To, string(MiniBuff)); err != nil {
 			panic(err)
 		}
+	}
+	if opts.To.N != 0 {
+		panic(errors.New("offset > input"))
 	}
 }
