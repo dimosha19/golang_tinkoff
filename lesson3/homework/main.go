@@ -281,7 +281,7 @@ func main() {
 	err = optionsInit(opts, true)
 	if err != nil {
 		l.Println(err)
-		return
+		panic(err)
 	}
 
 	err = RWInit(opts)
@@ -292,11 +292,11 @@ func main() {
 
 	if opts.Conv.TrimSpaces {
 		lb, rb, err := FindTextBounds()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			l.Println(err)
 		}
 		err = PostProcessing(opts, lb, rb)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			l.Println(err)
 		}
 	}
