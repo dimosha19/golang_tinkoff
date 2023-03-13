@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"os"
 	"strings"
@@ -38,7 +39,8 @@ type Options struct {
 	}
 }
 
-func InitOptionConv(options *Options, create bool) {
+func InitOptionConv(options *Options, create bool) error {
+	var err error
 	options.Conv.LowerCase = false
 	options.Conv.UpperCase = false
 	options.Conv.TrimSpaces = false
@@ -53,40 +55,41 @@ func InitOptionConv(options *Options, create bool) {
 			case "trim_spaces":
 				options.Conv.TrimSpaces = true
 			default:
-				panic(errors.New("invalid -conv arguments"))
+				return errors.New("invalid -conv arguments")
 			}
 		}
 	}
 	// Если нужно обрезать пробелы, то нужен вспомогательный файл
 	if options.Conv.TrimSpaces && create {
-		var err error
 		options.TempFile, err = os.Create(TempFileName)
-		check(err)
 	}
+	return err
 }
 
-func InitOptionInputOutput(options *Options) {
+func InitOptionInputOutput(options *Options) error {
 	var err error
 	if options.FileInput != "" {
 		options.From, err = os.Open(options.FileInput)
-		check(err)
+		if err != nil {
+			return err
+		}
 	} else {
 		options.From = os.Stdin
 	}
 	if options.FileOutput != "" {
 		if _, err := os.Stat(options.FileOutput); errors.Is(err, os.ErrNotExist) {
-			outputStream, err := os.Create(options.FileOutput)
-			options.To = OffsetWriter{outputStream, int64(options.Offset)}
-			if err != nil {
-				fmt.Println(err)
-				return
+			outputStream, err2 := os.Create(options.FileOutput)
+			if err2 != nil {
+				return err2
 			}
+			options.To = OffsetWriter{outputStream, int64(options.Offset)}
 		} else {
-			panic(errors.New("file already exists"))
+			return errors.New("file already exists")
 		}
 	} else {
 		options.To = OffsetWriter{os.Stdout, int64(options.Offset)}
 	}
+	return err
 }
 
 type OffsetWriter struct {
@@ -104,18 +107,26 @@ func (p *OffsetWriter) GetN() int64 {
 	return p.N
 }
 
-func optionsInit(options *Options, create bool) {
-	InitOptionInputOutput(options)
-	InitOptionConv(options, create)
+func optionsInit(options *Options, create bool) error {
+	var err error
+	err = InitOptionInputOutput(options)
+	if err != nil {
+		return err
+	}
+	err = InitOptionConv(options, create)
+	if err != nil {
+		return err
+	}
 	if options.Limit != -1 {
 		options.From = io.LimitReader(options.From, int64(options.Limit+options.Offset))
 	}
 	if options.Offset < 0 {
-		panic(errors.New("offset must be positiv"))
+		return errors.New("offset must be positiv")
 	}
 	if options.Conv.UpperCase && options.Conv.LowerCase {
-		panic(errors.New("lower_case and upper_case cannot be paramentary at the same time"))
+		return errors.New("lower_case and upper_case cannot be paramentary at the same time")
 	}
+	return err
 }
 
 func ParseFlags() (*Options, error) {
@@ -131,12 +142,6 @@ func ParseFlags() (*Options, error) {
 	flag.Parse()
 
 	return &opts, nil
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func ValidateBytesArray(bytes []byte) []byte {
@@ -156,7 +161,7 @@ func ValidateBytesArray(bytes []byte) []byte {
 	return res
 }
 
-func FindTextBounds() (int, int) {
+func FindTextBounds() (int, int, error) {
 	pp, _ := os.Open(TempFileName)
 	plp := bufio.NewReader(pp)
 	flagg := false
@@ -173,7 +178,7 @@ func FindTextBounds() (int, int) {
 			rbound = i
 		}
 		if err != nil && !errors.Is(err, io.EOF) {
-			return 0, 0
+			return 0, 0, nil
 		}
 		if err == io.EOF {
 			break
@@ -186,7 +191,7 @@ func FindTextBounds() (int, int) {
 			panic(err)
 		}
 	}(pp)
-	return lbound, rbound + 1
+	return lbound, rbound + 1, nil
 
 }
 
@@ -217,55 +222,83 @@ func ConvertCase(b []byte, lower bool, upper bool) []byte {
 	}
 }
 
-func writeBytes(options *Options, buff []byte) {
+func writeBytes(options *Options, buff []byte) error {
 	if options.Conv.TrimSpaces {
 		if _, err := io.WriteString(&OffsetWriter{options.TempFile, int64(options.Offset)}, string(buff)); err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		buff = ValidateBytesArray(buff)
 		buff = ConvertCase(buff, options.Conv.LowerCase, options.Conv.UpperCase)
 		if _, err := io.WriteString(&options.To, string(buff)); err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
-func RWInit(options *Options) {
+func RWInit(options *Options) error {
 	var err error
 	var res []byte
 	bflag := false
 	for err != io.EOF && len(res) != 0 || !bflag {
 		bflag = true
 		res, err = readBytes(options.From, options.BlockSize)
-		if err != io.EOF {
-			writeBytes(options, res)
+		if err != io.EOF || err == nil {
+			err = writeBytes(options, res)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
 	}
+	return err
 }
 
-func PostProcessing(options *Options, l int, r int) {
+func PostProcessing(options *Options, l int, r int) error {
 	options.FileInput = TempFileName
 	options.Offset = l
 	options.Limit = r - l
-	optionsInit(options, false)
+	if err := optionsInit(options, false); err != nil {
+		return err
+	}
 	options.Conv.TrimSpaces = false
-	RWInit(options)
+	if err := RWInit(options); err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
+	l := log.New(os.Stderr, "", 0)
 	opts, err := ParseFlags()
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "can not parse flags:", err)
 		os.Exit(1)
 	}
 
-	optionsInit(opts, true)
-	RWInit(opts)
+	err = optionsInit(opts, true)
+	if err != nil {
+		l.Println(err)
+		return
+	}
+
+	err = RWInit(opts)
+	if err != io.EOF {
+		l.Println(err)
+		return
+	}
 
 	if opts.Conv.TrimSpaces {
-		l, r := FindTextBounds()
-		PostProcessing(opts, l, r)
+		lb, rb, err := FindTextBounds()
+		if err != nil {
+			l.Println(err)
+		}
+		err = PostProcessing(opts, lb, rb)
+		if err != nil {
+			l.Println(err)
+		}
 	}
 	if len(MiniBuff) > 0 {
 		if _, err := io.WriteString(&opts.To, string(MiniBuff)); err != nil {
