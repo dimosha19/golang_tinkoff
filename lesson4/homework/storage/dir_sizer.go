@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 )
 
 // Result represents the Size function result
@@ -31,7 +33,43 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
+func worker(ctx context.Context, d Dir, result *Result) error {
+	wg := sync.WaitGroup{}
+	if dirList, fileList, err := d.Ls(ctx); err == nil {
+		for _, i := range fileList {
+			if delta, err := i.Stat(ctx); err == nil {
+				atomic.AddInt64(&result.Size, delta)
+				atomic.AddInt64(&result.Count, 1)
+			} else {
+				ctx.Done()
+				return err
+			}
+		}
+		for _, i := range dirList {
+			wg.Add(1)
+			go func(i Dir) {
+				defer wg.Done()
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					err := worker(ctx, i, result)
+					if err != nil {
+						return
+					}
+				}
+			}(i)
+		}
+		wg.Wait()
+	} else {
+		ctx.Done()
+		return err
+	}
+	return nil
+}
+
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	// TODO: implement this
-	return Result{}, nil
+	res := Result{}
+	err := worker(ctx, d, &res)
+	return res, err
 }
