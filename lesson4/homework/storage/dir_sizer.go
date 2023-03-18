@@ -37,12 +37,12 @@ func worker(ctx context.Context, d Dir, result *Result) error {
 	wg := sync.WaitGroup{}
 	if dirList, fileList, err := d.Ls(ctx); err == nil {
 		for _, i := range fileList {
-			if delta, err := i.Stat(ctx); err == nil {
+			if delta, err1 := i.Stat(ctx); err1 == nil {
 				atomic.AddInt64(&result.Size, delta)
 				atomic.AddInt64(&result.Count, 1)
 			} else {
 				ctx.Done()
-				return err
+				return err1
 			}
 		}
 		for _, i := range dirList {
@@ -53,8 +53,8 @@ func worker(ctx context.Context, d Dir, result *Result) error {
 				case <-ctx.Done():
 					return
 				default:
-					err := worker(ctx, i, result)
-					if err != nil {
+					err2 := worker(ctx, i, result)
+					if err2 != nil {
 						return
 					}
 				}
