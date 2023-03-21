@@ -24,7 +24,7 @@ type DirSizer interface {
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	//maxWorkersCount int
-
+	err []error
 	// TODO: add other fields as you wish
 }
 
@@ -33,7 +33,7 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
-func worker(ctx context.Context, d Dir, result *Result) {
+func (a *sizer) worker(ctx context.Context, d Dir, result *Result) {
 	wg := sync.WaitGroup{}
 	if dirList, fileList, err := d.Ls(ctx); err == nil {
 		for _, i := range fileList {
@@ -44,6 +44,7 @@ func worker(ctx context.Context, d Dir, result *Result) {
 					atomic.AddInt64(&result.Size, delta)
 					atomic.AddInt64(&result.Count, 1)
 				} else {
+					a.err = append(a.err, err1)
 					return
 				}
 			}(i)
@@ -52,12 +53,12 @@ func worker(ctx context.Context, d Dir, result *Result) {
 			wg.Add(1)
 			go func(i Dir) {
 				defer wg.Done()
-				worker(ctx, i, result)
+				a.worker(ctx, i, result)
 			}(i)
 		}
 		wg.Wait()
 	} else {
-		ctx.Done()
+		a.err = append(a.err, err)
 		return
 	}
 	return
@@ -65,6 +66,9 @@ func worker(ctx context.Context, d Dir, result *Result) {
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	res := Result{}
-	worker(ctx, d, &res)
-	return res, nil
+	a.worker(ctx, d, &res)
+	if len(a.err) == 0 {
+		return res, nil
+	}
+	return res, a.err[0]
 }
