@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"sync"
+	"golang.org/x/sync/errgroup"
 	"sync/atomic"
 )
 
@@ -24,7 +24,7 @@ type DirSizer interface {
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	//maxWorkersCount int
-	err []error
+	//err []error
 	// TODO: add other fields as you wish
 }
 
@@ -33,42 +33,46 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
-func (a *sizer) worker(ctx context.Context, d Dir, result *Result) {
-	wg := sync.WaitGroup{}
+func (a *sizer) worker(ctx context.Context, d Dir, result *Result) error {
+	g, ctx := errgroup.WithContext(ctx)
 	if dirList, fileList, err := d.Ls(ctx); err == nil {
 		for _, i := range fileList {
-			wg.Add(1)
-			go func(i File) {
-				defer wg.Done()
-				if delta, err1 := i.Stat(ctx); err1 == nil {
+			file := i
+			g.Go(func() error {
+				if delta, err1 := file.Stat(ctx); err1 == nil {
 					atomic.AddInt64(&result.Size, delta)
 					atomic.AddInt64(&result.Count, 1)
 				} else {
-					a.err = append(a.err, err1)
-					return
+					return err1
 				}
-			}(i)
+				return nil
+			})
 		}
 		for _, i := range dirList {
-			wg.Add(1)
-			go func(i Dir) {
-				defer wg.Done()
-				a.worker(ctx, i, result)
-			}(i)
+			dir := i
+			g.Go(func() error {
+				err := a.worker(ctx, dir, result)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
 		}
-		wg.Wait()
+		err3 := g.Wait()
+		if err3 != nil {
+			return err3
+		}
 	} else {
-		a.err = append(a.err, err)
-		return
+		return err
 	}
-	return
+	return nil
 }
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	res := Result{}
-	a.worker(ctx, d, &res)
-	if len(a.err) == 0 {
-		return res, nil
+	err := a.worker(ctx, d, &res)
+	if err != nil {
+		return res, err
 	}
-	return res, a.err[0]
+	return res, nil
 }
