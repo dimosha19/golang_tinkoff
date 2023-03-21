@@ -33,43 +33,38 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
-func worker(ctx context.Context, d Dir, result *Result) error {
+func worker(ctx context.Context, d Dir, result *Result) {
 	wg := sync.WaitGroup{}
 	if dirList, fileList, err := d.Ls(ctx); err == nil {
 		for _, i := range fileList {
-			if delta, err1 := i.Stat(ctx); err1 == nil {
-				atomic.AddInt64(&result.Size, delta)
-				atomic.AddInt64(&result.Count, 1)
-			} else {
-				ctx.Done()
-				return err1
-			}
+			wg.Add(1)
+			go func(i File) {
+				defer wg.Done()
+				if delta, err1 := i.Stat(ctx); err1 == nil {
+					atomic.AddInt64(&result.Size, delta)
+					atomic.AddInt64(&result.Count, 1)
+				} else {
+					return
+				}
+			}(i)
 		}
 		for _, i := range dirList {
 			wg.Add(1)
 			go func(i Dir) {
 				defer wg.Done()
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					err2 := worker(ctx, i, result)
-					if err2 != nil {
-						return
-					}
-				}
+				worker(ctx, i, result)
 			}(i)
 		}
 		wg.Wait()
 	} else {
 		ctx.Done()
-		return err
+		return
 	}
-	return nil
+	return
 }
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	res := Result{}
-	err := worker(ctx, d, &res)
-	return res, err
+	worker(ctx, d, &res)
+	return res, nil
 }
