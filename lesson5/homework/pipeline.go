@@ -62,7 +62,7 @@ func Collector(c <-chan *Pack) chan any {
 }
 
 func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
-	stp := make(chan any, 0)
+	stp := make(chan any)
 	wg := sync.WaitGroup{}
 	ticket := 0
 	c := make(chan *Pack, 100)
