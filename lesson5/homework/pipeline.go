@@ -15,11 +15,11 @@ func doStage(ctx context.Context, in <-chan any) <-chan any {
 	out := make(chan any)
 	go func() {
 		defer close(out)
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			for n := range in {
+		for n := range in {
+			select {
+			case <-ctx.Done():
+				return
+			default:
 				out <- n
 			}
 		}
