@@ -11,15 +11,18 @@ type (
 
 type Stage func(in In) (out Out)
 
-func doStage(ctx context.Context, in <-chan any) <-chan any {
+func doStage(ctx context.Context, in In) Out {
 	out := make(chan any)
 	go func() {
 		defer close(out)
-		for n := range in {
+		for {
 			select {
 			case <-ctx.Done():
 				return
-			default:
+			case n, ok := <-in:
+				if !ok {
+					return
+				}
 				out <- n
 			}
 		}
@@ -31,6 +34,9 @@ func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
 	empty := make(chan any)
 	defer close(empty)
 	for _, stage := range stages {
+		if in == nil {
+			return empty
+		}
 		in = stage(doStage(ctx, in))
 	}
 	return in
