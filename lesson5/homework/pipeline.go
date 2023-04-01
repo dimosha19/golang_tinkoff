@@ -23,7 +23,11 @@ func doStage(ctx context.Context, in In) Out {
 				if !ok {
 					return
 				}
-				out <- n
+				select {
+				case <-ctx.Done():
+					return
+				case out <- n:
+				}
 			}
 		}
 	}()
@@ -31,12 +35,7 @@ func doStage(ctx context.Context, in In) Out {
 }
 
 func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
-	empty := make(chan any)
-	defer close(empty)
 	for _, stage := range stages {
-		if in == nil {
-			return empty
-		}
 		in = stage(doStage(ctx, in))
 	}
 	return in
