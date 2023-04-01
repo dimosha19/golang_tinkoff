@@ -1,0 +1,334 @@
+func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
+	pip := make([]chan any, len(stages))
+	g := sync.WaitGroup{}
+	for i := range pip {
+		pip[i] = make(chan any)
+	}
+	g.Add(1)
+	go func() {
+		defer g.Done()
+		defer close(pip[0])
+		k := <-stages[0](in)
+		for {
+			pip[0] <- k
+			k = <-stages[0](in)
+		}
+	}()
+	for i := 1; i < len(stages); i++ {
+		g.Add(1)
+		go func(i int) {
+			defer g.Done()
+			defer close(pip[i])
+			k := <-stages[i](pip[i-1])
+			for {
+				pip[i] <- k
+				k = <-stages[i](pip[i-1])
+			}
+		}(i)
+	}
+	g.Wait()
+	return pip[len(stages)-1]
+}
+
+
+
+func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
+	ln := len(stages)
+	//wg := sync.WaitGroup{}
+	res := make(chan any, 100)
+	//wg.Add(1)
+	//go func() {
+	//	defer wg.Done()
+	//	for {
+	//		select {
+	//		case <-ctx.Done():
+	//			return
+	//		case k, ok := <-pip[ln-1]:
+	//			if !ok {
+	//				return
+	//			}
+	//			res <- k
+	//		}
+	//	}
+	//}()
+
+	for input := range in {
+		start := make(chan any, 1)
+		start <- input
+		//wg.Add(1)
+		//go func() {
+		//	defer wg.Done()
+		w := sync.WaitGroup{}
+		w.Add(1)
+		go func() {
+			defer w.Done()
+			Worker(ctx, start, pip[0], stages[0])
+		}()
+		w.Wait()
+		for i := 1; i < ln; i++ {
+			w.Add(1)
+			go func(i int) {
+				defer w.Done()
+				Worker(ctx, pip[i-1], pip[i], stages[i])
+			}(i)
+		}
+		w.Wait()
+		t := <-pip[ln-1]
+		res <- t
+		//}()
+		//wg.Wait()
+	}
+	close(res)
+	return res
+}
+----------------------------------------------------------------------------------------------
+package executor
+
+import (
+	"context"
+	"sync"
+)
+
+type (
+	In  <-chan any
+	Out = In
+)
+
+type Stage func(in In) (out Out)
+
+func Worker(ctx context.Context, from <-chan any, to chan<- any, stage Stage) {
+	select {
+	case <-ctx.Done():
+		return
+	case i := <-stage(from):
+		to <- i
+	}
+}
+
+func run(ln int, ctx context.Context, start <-chan any, ticket *chan struct{}, stages ...Stage) any {
+	wg := sync.WaitGroup{}
+	pip := make([]chan any, ln)
+	for i := range pip {
+		pip[i] = make(chan any, 1)
+	}
+	pip[ln-1] = make(chan any, 100)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		Worker(ctx, start, pip[0], stages[0])
+	}()
+	for i := 1; i < ln; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			Worker(ctx, pip[i-1], pip[i], stages[i])
+		}(i)
+	}
+	wg.Wait()
+	*ticket <- struct{}{}
+	t := <-pip[ln-1]
+	return t
+}
+
+func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
+	ln := len(stages)
+	wg := sync.WaitGroup{}
+	res := make(chan any, 100)
+	a := make([]chan struct{}, 6)
+	for i := range a {
+		a[i] = make(chan struct{}, 1)
+	}
+	a[0] <- struct{}{}
+	num := 0
+	for i := range in {
+		wg.Add(1)
+		go func(i any, num int) {
+			_ = <-a[num]
+			defer wg.Done()
+			start := make(chan any, 1)
+			start <- i
+			res <- run(ln, ctx, start, &a[num+1], stages...)
+		}(i, num)
+		num++
+	}
+	wg.Wait()
+	close(res)
+	return res
+}
+
+------------------------------------------------------------------------------------
+package executor
+
+import (
+	"context"
+	"golang.org/x/sync/errgroup"
+	"sort"
+)
+
+type (
+	In  <-chan any
+	Out = In
+)
+
+type Stage func(in In) (out Out)
+
+type Pack struct {
+	seqNum int
+	stage  int
+	ctx    context.Context
+	value  any
+}
+
+func NewPack(ctx context.Context, val any, num int) *Pack {
+	return &Pack{num, 0, ctx, val}
+}
+
+func (p *Pack) Push(stages ...Stage) *Pack {
+	if p.stage < len(stages) {
+		k := make(chan any, 1)
+		k <- p.value
+		close(k)
+		t := <-stages[p.stage](k)
+		p.value = t
+		p.stage++
+	} else {
+		p.stage = -1
+	}
+	return p
+}
+
+func (p *Pack) Run(stages ...Stage) *Pack {
+	for p.stage != -1 {
+		p = p.Push(stages...)
+	}
+	return p
+}
+
+func Collector(c <-chan *Pack) chan any {
+	res := make(chan any, 100)
+	defer close(res)
+	var b []*Pack
+	for i := range c {
+		b = append(b, i)
+	}
+	sort.Slice(b, func(i, j int) bool {
+		return b[i].seqNum <= b[j].seqNum
+	})
+	for i := range b {
+		res <- b[i].value
+	}
+	return res
+}
+
+func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
+	stp := make(chan any, 0)
+	flag := false
+	wg, ctx := errgroup.WithContext(ctx)
+	ticket := 0
+	c := make(chan *Pack, 100)
+	for i := range in {
+		if flag {
+			return stp
+		}
+		tk, ii := ticket, i
+		wg.Go(func() error {
+			select {
+			case <-ctx.Done():
+				flag = true
+				return ctx.Err()
+			default:
+				n := NewPack(ctx, ii, tk)
+				c <- n.Run(stages...)
+			}
+			return nil
+		})
+		ticket++
+	}
+	err := wg.Wait()
+	if err != nil {
+		return stp
+	}
+	close(c)
+	return Collector(c)
+}
+----------------------------------------------------------------------
+package executor
+
+import (
+	"context"
+	"sort"
+	"sync"
+)
+
+type (
+	In  <-chan any
+	Out = In
+)
+
+type Stage func(in In) (out Out)
+
+type Pack struct {
+	seqNum int
+	stage  int
+	ctx    context.Context
+	value  any
+}
+
+func NewPack(ctx context.Context, val any, num int) *Pack {
+	return &Pack{num, 0, ctx, val}
+}
+
+func (p *Pack) Push(stages ...Stage) *Pack {
+	if p.stage < len(stages) {
+		k := make(chan any, 1)
+		k <- p.value
+		close(k)
+		t := <-stages[p.stage](k)
+		p.value = t
+		p.stage++
+	} else {
+		p.stage = -1
+	}
+	return p
+}
+
+func (p *Pack) Run(stages ...Stage) *Pack {
+	for p.stage != -1 {
+		p = p.Push(stages...)
+	}
+	return p
+}
+
+func Collector(c <-chan *Pack) chan any {
+	res := make(chan any, 100)
+	defer close(res)
+	var b []*Pack
+	for i := range c {
+		b = append(b, i)
+	}
+	sort.Slice(b, func(i, j int) bool {
+		return b[i].seqNum <= b[j].seqNum
+	})
+	for i := range b {
+		res <- b[i].value
+	}
+	return res
+}
+
+func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
+	wg := sync.WaitGroup{}
+	ticket := 0
+	c := make(chan *Pack, 100)
+	for i := range in {
+		wg.Add(1)
+		go func(i any, num int) {
+			defer wg.Done()
+			n := NewPack(ctx, i, num)
+			c <- n.Run(stages...)
+		}(i, ticket)
+		ticket++
+	}
+	wg.Wait()
+	close(c)
+	return Collector(c)
+}
