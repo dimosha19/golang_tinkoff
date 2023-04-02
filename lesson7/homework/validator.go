@@ -26,6 +26,26 @@ func (v ValidationErrors) Error() string {
 	return res
 }
 
+func fieldProcessing(curr reflect.StructField, value reflect.Value, i int) ValidationErrors {
+	errorst := ValidationErrors{}
+	if value.Kind() == reflect.Ptr { // TODO check for ptr
+		value = reflect.Indirect(value)
+	}
+
+	var validator IValidator
+
+	if curr.Type.Kind() == reflect.Int {
+		validator = IntValidator{curr.Name, int(value.Field(i).Int()), curr.Tag.Get(tag)}
+	} else if curr.Type.Kind() == reflect.String {
+		validator = StrValidator{curr.Name, string(value.Field(i).String()), curr.Tag.Get(tag)}
+	}
+
+	if res := validator.Validate(); res != nil {
+		errorst = append(errorst, res...)
+	}
+	return errorst
+}
+
 func Validate(v any) error {
 	errorst := ValidationErrors{}
 
@@ -48,27 +68,8 @@ func Validate(v any) error {
 			return errorst
 		}
 
-		if value.Kind() == reflect.Ptr { // TODO: check for ptr
-			value = reflect.Indirect(value)
-		}
-
-		var validator IValidator
-
-		if curr.Type.Kind() == reflect.Int {
-			vvv := int(value.Field(i).Int())
-			tg := curr.Tag.Get(tag)
-			validator = IntValidator{vvv, tg}
-		}
-		if curr.Type.Kind() == reflect.String {
-			vvv := string(value.Field(i).String())
-			tg := curr.Tag.Get(tag)
-			validator = StrValidator{vvv, tg}
-		}
-
-		if res := validator.Validate(); res != nil {
-			for i := range res {
-				errorst = append(errorst, ValidationError{res[i]})
-			}
+		if a := fieldProcessing(curr, value, i); len(a) != 0 {
+			errorst = append(errorst, a...)
 		}
 	}
 	if len(errorst) != 0 {

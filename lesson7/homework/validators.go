@@ -7,66 +7,55 @@ import (
 	"strings"
 )
 
-var IsLetter = regexp.MustCompile(`^[a-zA-Z]+$`).MatchString
 var IsDigit = regexp.MustCompile(`^[-]*[0-9]+$`).MatchString
 
 type IValidator interface {
-	Validate() []error
+	Validate() ValidationErrors
 }
 
 type IntValidator struct {
-	val any
-	tag string
+	name string
+	val  any
+	tag  string
 }
 
 type StrValidator struct {
-	val any
-	tag string
+	name string
+	val  any
+	tag  string
 }
 
-func (v StrValidator) Validate() []error {
+func makeerr(name string, e error) ValidationError {
+	if e.Error() == ErrInvalidValidatorSyntax.Error() {
+		return ValidationError{e}
+	}
+	s := name + ": " + e.Error()
+	return ValidationError{errors.New(s)}
+}
+
+func (v StrValidator) Validate() ValidationErrors {
 
 	value := v.val.(string)
-	errs := []error{}
+	errs := ValidationErrors{}
 	elems := strings.Split(v.tag, " ") // TODO: check for multi tag
 	for i := range elems {
 		pair := strings.Split(elems[i], ":")
 		switch pair[0] {
 		case "max":
 			if err := v.ValidateMax(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := value + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		case "min":
 			if err := v.ValidateMin(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := value + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		case "in":
 			if err := v.ValidateIn(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := value + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		case "len":
 			if err := v.ValidateLen(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := value + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		}
 	}
@@ -164,39 +153,24 @@ func (v IntValidator) ValidateMax(val int, tagVal string) error {
 	return errors.New("field does not fit according to the restriction from above")
 }
 
-func (v IntValidator) Validate() []error {
+func (v IntValidator) Validate() ValidationErrors {
 	value := v.val.(int)
-	errs := []error{}
+	errs := ValidationErrors{}
 	elems := strings.Split(v.tag, " ") // TODO: check for multi tag
 	for i := range elems {
 		pair := strings.Split(elems[i], ":")
 		switch pair[0] {
 		case "max":
 			if err := v.ValidateMax(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := strconv.Itoa(value) + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		case "min":
 			if err := v.ValidateMin(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := strconv.Itoa(value) + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		case "in":
 			if err := v.ValidateIn(value, pair[1]); err != nil {
-				if err.Error() == ErrInvalidValidatorSyntax.Error() {
-					errs = append(errs, err)
-				} else {
-					s := strconv.Itoa(value) + " - " + err.Error()
-					errs = append(errs, errors.New(s))
-				}
+				errs = append(errs, makeerr(v.name, err))
 			}
 		}
 	}
