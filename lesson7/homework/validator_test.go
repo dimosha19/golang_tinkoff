@@ -124,6 +124,48 @@ func TestValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Int slices ok",
+			args: args{
+				v: struct {
+					InInt     []int `validate:"in:20,25,30"`
+					InNeg     []int `validate:"in:-20,-25,-30"`
+					MinInt    []int `validate:"min:10"`
+					MinIntNeg []int `validate:"min:-10"`
+					MaxInt    []int `validate:"max:20"`
+					MaxIntNeg []int `validate:"max:-2"`
+				}{
+					InInt:     []int{20, 25, 30},
+					InNeg:     []int{-20, -25, -30},
+					MinInt:    []int{10, 100, 1000},
+					MinIntNeg: []int{-10, -1, 10},
+					MaxInt:    []int{20, 10, 2},
+					MaxIntNeg: []int{-10, -2},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Str slices ok",
+			args: args{
+				v: struct {
+					Len       []string `validate:"len:20"`
+					LenZ      []string `validate:"len:0"`
+					InStr     []string `validate:"in:foo,bar"`
+					MinStr    []string `validate:"min:10"`
+					MinStrNeg []string `validate:"min:-1"`
+					MaxStr    []string `validate:"max:20"`
+				}{
+					Len:       []string{"abcdefghjklmopqrstvu"},
+					LenZ:      []string{"", "", ""},
+					InStr:     []string{"bar", "bar"},
+					MinStr:    []string{"abcdefghjkl", "abcdefghjk", "abcdefghjkabcdefghjk"},
+					MinStrNeg: []string{"abc", "", " "},
+					MaxStr:    []string{"abcdefghjklmopqrst", "", " ", "abcdefghjklmopqrstmm"},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "wrong length",
 			args: args{
 				v: struct {
