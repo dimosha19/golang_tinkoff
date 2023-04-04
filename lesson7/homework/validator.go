@@ -38,9 +38,9 @@ func fieldProcessing(curr reflect.StructField, value reflect.Value, i int) Valid
 		validator = IntValidator{curr.Name, int(value.Field(i).Int()), curr.Tag.Get(tag)}
 	} else if curr.Type.Kind() == reflect.String {
 		validator = StrValidator{curr.Name, value.Field(i).String(), curr.Tag.Get(tag)}
-	} else if curr.Type.Kind() == reflect.Slice && reflect.TypeOf(value.Field(i).Interface()).Elem().Kind() == reflect.Int {
+	} else if curr.Type.Kind() == reflect.Slice && value.Field(i).Type().Elem().Kind() == reflect.Int {
 		validator = IntSliceValidator{curr.Name, value.Field(i).Interface(), curr.Tag.Get(tag)}
-	} else if curr.Type.Kind() == reflect.Slice && reflect.TypeOf(value.Field(i).Interface()).Elem().Kind() == reflect.String {
+	} else if curr.Type.Kind() == reflect.Slice && value.Field(i).Type().Elem().Kind() == reflect.String {
 		validator = StrSliceValidator{curr.Name, value.Field(i).Interface(), curr.Tag.Get(tag)}
 	}
 
