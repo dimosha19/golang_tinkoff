@@ -18,7 +18,13 @@ func (v IntSliceValidator) Validate() ValidationErrors {
 
 	for i := range value {
 		e := IntValidator{v.name, value[i], v.tag}.Validate()
-		errs = append(errs, e...)
+		for j := range e {
+			if e.Error() == ErrInvalidValidatorSyntax.Error() {
+				errs = append(errs, e[j])
+				return errs
+			}
+			errs = append(errs, e[j])
+		}
 	}
 
 	return errs
@@ -30,7 +36,13 @@ func (v StrSliceValidator) Validate() ValidationErrors {
 
 	for i := range value {
 		e := StrValidator{v.name, value[i], v.tag}.Validate()
-		errs = append(errs, e...)
+		for j := range e {
+			if e.Error() == ErrInvalidValidatorSyntax.Error() {
+				errs = append(errs, e[j])
+				return errs
+			}
+			errs = append(errs, e[j])
+		}
 	}
 
 	return errs

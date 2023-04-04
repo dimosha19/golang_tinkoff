@@ -28,7 +28,7 @@ func (v ValidationErrors) Error() string {
 
 func fieldProcessing(curr reflect.StructField, value reflect.Value, i int) ValidationErrors {
 	errorst := ValidationErrors{}
-	if value.Kind() == reflect.Ptr { // TODO check for ptr
+	if value.Kind() == reflect.Ptr {
 		value = reflect.Indirect(value)
 	}
 

@@ -189,6 +189,29 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "wrong len on slices",
+			args: args{
+				v: struct {
+					Lower    []string `validate:"len:24"`
+					Higher   []string `validate:"len:5"`
+					Zero     []string `validate:"len:3"`
+					BadSpec  []string `validate:"len:%12"`
+					Negative []string `validate:"len:-6"`
+				}{
+					Lower:    []string{"abcdef", ""},                          // + 2
+					Higher:   []string{"abcdef", "                         "}, // + 2
+					Zero:     []string{""},                                    // + 1
+					BadSpec:  []string{"abc", "sdv", "", "+1"},                // + 1
+					Negative: []string{"abc", "sdv", "", "+1"},                // + 1
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 7)
+				return true
+			},
+		},
+		{
 			name: "wrong in",
 			args: args{
 				v: struct {
@@ -208,6 +231,29 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 			checkErr: func(err error) bool {
 				assert.Len(t, err.(ValidationErrors), 5)
+				return true
+			},
+		},
+		{
+			name: "wrong in on slices",
+			args: args{
+				v: struct {
+					InA     []string `validate:"in:ab,cd"`
+					InB     []string `validate:"in:aa,bb,cd,ee"`
+					InC     []int    `validate:"in:-1,-3,5,7"`
+					InD     []int    `validate:"in:5-"`
+					InEmpty []string `validate:"in:"`
+				}{
+					InA:     []string{"ef", ""},       // + 1
+					InB:     []string{"ab", "", "ba"}, // + 2
+					InC:     []int{2, -1, 4, 8},       // + 3
+					InD:     []int{12, 15, 56},        // + 1
+					InEmpty: []string{"", "asdafd"},   // + 1
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 8)
 				return true
 			},
 		},
@@ -235,6 +281,29 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "wrong min on slices",
+			args: args{
+				v: struct {
+					MinA []string `validate:"min:10"`
+					MinB []int    `validate:"min:-10"`
+					MinC []int    `validate:"min:5-"`
+					MinD []int    `validate:"min:"`
+					MinE []string `validate:"min:"`
+				}{
+					MinA: []string{"ef", "", "abcdeabcde"}, // + 2
+					MinB: []int{-22, -11, -10, 10},         // + 2
+					MinC: []int{12, 0, -12},                // + 1
+					MinD: []int{11, 0, -11},                // + 1
+					MinE: []string{"abc", "", ","},         // + 1
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 7)
+				return true
+			},
+		},
+		{
 			name: "wrong max",
 			args: args{
 				v: struct {
@@ -256,6 +325,112 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 			checkErr: func(err error) bool {
 				assert.Len(t, err.(ValidationErrors), 6)
+				return true
+			},
+		},
+		{
+			name: "wrong max on slices",
+			args: args{
+				v: struct {
+					MaxA []string `validate:"max:2"`
+					MaxB []string `validate:"max:-7"`
+					MaxC []int    `validate:"max:-12"`
+					MaxD []int    `validate:"max:5-"`
+					MaxE []int    `validate:"max:"`
+					MaxF []string `validate:"max:"`
+				}{
+					MaxA: []string{"efgh", "             "}, // + 2
+					MaxB: []string{"ab", "             "},   // + 2
+					MaxC: []int{22, 20, -11},                // + 3
+					MaxD: []int{12, 456, 0, -111},           // + 1
+					MaxE: []int{12, 456, 0, -111},           // + 1
+					MaxF: []string{"abc", "", ",", "dsav"},  // + 1
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 10)
+				return true
+			},
+		},
+		{
+			name: "test multiply tags string: max + min + in",
+			args: args{
+				v: struct {
+					MaxMinIn []string `validate:"max:5 min:1 in:a,aa,bbb,bbbb,bbabb"`
+				}{
+					MaxMinIn: []string{"a", "aa", "bbb", "bbabb"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test multiply tags string: len + in",
+			args: args{
+				v: struct {
+					LenIn []string `validate:"len:2 in:aa,bb"`
+				}{
+					LenIn: []string{"aa", "bb"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test multiply tags string err: wrong",
+			args: args{
+				v: struct {
+					StrA []string `validate:"len:5 in:aa,bb"`
+				}{
+					StrA: []string{"aa", "bbbbb"},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 2)
+				return true
+			},
+		},
+		{
+			name: "test multiply tags int: max + min + in",
+			args: args{
+				v: struct {
+					MaxMinIn []int `validate:"max:50 min:1 in:3,25"`
+				}{
+					MaxMinIn: []int{25, 3},
+				},
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "test multiply tags err int: wrong",
+			args: args{
+				v: struct {
+					MaxMin []int `validate:"max:35 min:25"`
+				}{
+					MaxMin: []int{36, 12},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 2)
+				return true
+			},
+		},
+		{
+			name: "Invalid tags",
+			args: args{
+				v: struct {
+					Int1 int    `validate:"len:2"`
+					Str1 string `validate:"mini:2"`
+				}{
+					Int1: 36,
+					Str1: "as",
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 2)
 				return true
 			},
 		},

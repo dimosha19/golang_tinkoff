@@ -37,26 +37,33 @@ func (v StrValidator) Validate() ValidationErrors {
 
 	value := v.val.(string)
 	errs := ValidationErrors{}
-	elems := strings.Split(v.tag, " ") // TODO: check for multi tag
+	elems := strings.Split(v.tag, " ")
 	for i := range elems {
 		pair := strings.Split(elems[i], ":")
 		switch pair[0] {
 		case "max":
 			if err := v.ValidateMax(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
 		case "min":
 			if err := v.ValidateMin(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
 		case "in":
 			if err := v.ValidateIn(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
 		case "len":
 			if err := v.ValidateLen(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
+		default:
+			errs = append(errs, makeerr(v.name, ErrInvalidValidatorSyntax))
+			return errs
 		}
 	}
 	return errs
@@ -66,9 +73,9 @@ func (v StrValidator) ValidateIn(val string, tagVal string) error {
 	if tagVal == "" {
 		return ErrInvalidValidatorSyntax
 	}
-	tagArr := strings.Split(tagVal, ",") // TODO: [string] вхождение в {string, int, string, ... };
+	tagArr := strings.Split(tagVal, ",")
 	for i := range tagArr {
-		if strings.Contains(val, tagArr[i]) {
+		if strings.Contains(tagArr[i], val) {
 			return nil
 		}
 	}
@@ -102,7 +109,7 @@ func (v StrValidator) ValidateMin(val string, tagVal string) error {
 
 func (v StrValidator) ValidateLen(val string, tagVal string) error {
 	elem, err := strconv.Atoi(tagVal)
-	if err != nil {
+	if err != nil || elem < 0 {
 		return ErrInvalidValidatorSyntax
 	}
 	if len(val) == elem {
@@ -115,7 +122,7 @@ func (v IntValidator) ValidateIn(val int, tagVal string) error {
 	if tagVal == "" {
 		return ErrInvalidValidatorSyntax
 	}
-	tagArr := strings.Split(tagVal, ",") // TODO: [int] вхождение в {int, STRING, int, ... };
+	tagArr := strings.Split(tagVal, ",")
 	for i := range tagArr {
 		elem, err := strconv.Atoi(tagArr[i])
 		if err != nil {
@@ -156,22 +163,28 @@ func (v IntValidator) ValidateMax(val int, tagVal string) error {
 func (v IntValidator) Validate() ValidationErrors {
 	value := v.val.(int)
 	errs := ValidationErrors{}
-	elems := strings.Split(v.tag, " ") // TODO: check for multi tag
+	elems := strings.Split(v.tag, " ")
 	for i := range elems {
 		pair := strings.Split(elems[i], ":")
 		switch pair[0] {
 		case "max":
 			if err := v.ValidateMax(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
 		case "min":
 			if err := v.ValidateMin(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
 		case "in":
 			if err := v.ValidateIn(value, pair[1]); err != nil {
 				errs = append(errs, makeerr(v.name, err))
+				return errs
 			}
+		default:
+			errs = append(errs, makeerr(v.name, ErrInvalidValidatorSyntax))
+			return errs
 		}
 	}
 	return errs
