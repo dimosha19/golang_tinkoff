@@ -25,7 +25,3 @@ func (p *scliceAd) Get(adID int64) *ads.Ad {
 func (p *scliceAd) Size() int64 {
 	return int64(len(*p))
 }
-
-//Add(ad ads.Ad) (*ads.Ad, error)
-//Get(adID int64) (*ads.Ad, error)
-//Size() int64
