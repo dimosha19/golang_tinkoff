@@ -1,11 +1,9 @@
 package httpfiber
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
-
 	"homework6/internal/app"
+	"net/http"
 )
 
 // Метод для создания объявления (ad)
@@ -18,14 +16,19 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
+		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
+		if err != nil {
+			return c.JSON(AdErrorResponse(err))
+		}
+
+		// TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
 		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -44,6 +47,14 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
+		ad, err := a.UpdateAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
+		if err != nil {
+			if err.Error() == "forbidden" {
+				c.Status(http.StatusForbidden)
+			}
+			return c.JSON(AdErrorResponse(err))
+		}
+
 		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
 		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
 
@@ -52,7 +63,7 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -71,6 +82,14 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
+		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+		if err != nil {
+			if err.Error() == "forbidden" {
+				c.Status(http.StatusForbidden)
+			}
+			return c.JSON(AdErrorResponse(err))
+		}
+
 		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
 
@@ -79,6 +98,6 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
