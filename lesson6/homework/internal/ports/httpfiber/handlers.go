@@ -18,6 +18,9 @@ func createAd(a app.App) fiber.Handler {
 
 		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
 		if err != nil {
+			if err.Error() == "bedrequest" {
+				c.Status(http.StatusBadRequest)
+			}
 			return c.JSON(AdErrorResponse(err))
 		}
 
@@ -49,7 +52,9 @@ func changeAdStatus(a app.App) fiber.Handler {
 
 		ad, err := a.UpdateAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
 		if err != nil {
-			if err.Error() == "forbidden" {
+			if err.Error() == "bedrequest" {
+				c.Status(http.StatusBadRequest)
+			} else if err.Error() == "forbidden" {
 				c.Status(http.StatusForbidden)
 			}
 			return c.JSON(AdErrorResponse(err))
@@ -84,7 +89,9 @@ func updateAd(a app.App) fiber.Handler {
 
 		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 		if err != nil {
-			if err.Error() == "forbidden" {
+			if err.Error() == "bedrequest" {
+				c.Status(http.StatusBadRequest)
+			} else if err.Error() == "forbidden" {
 				c.Status(http.StatusForbidden)
 			}
 			return c.JSON(AdErrorResponse(err))
