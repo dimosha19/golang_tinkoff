@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
+	"github.com/dimosha19/myvalidator"
 	"homework6/internal/ads"
-	"homework6/internal/validator"
 )
 
 type App interface {
