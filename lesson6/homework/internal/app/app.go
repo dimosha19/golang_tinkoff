@@ -15,6 +15,7 @@ type App interface {
 type Repository interface {
 	Add(ad ads.Ad) *ads.Ad
 	Get(adID int64) *ads.Ad
+	Update(adID int64, ad ads.Ad) (*ads.Ad, error)
 	Size() int64
 }
 
@@ -43,12 +44,11 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 		return nil, fmt.Errorf("forbidden")
 	}
 	temp.Published = published
-	err := validator.Validate(temp)
+	updated, err := p.repo.Update(adID, temp)
 	if err != nil {
 		return nil, fmt.Errorf("bedrequest")
 	}
-	t = &temp
-	return t, nil
+	return updated, nil
 }
 
 func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error) {
@@ -59,10 +59,9 @@ func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string)
 	}
 	temp.Title = title
 	temp.Text = text
-	err := validator.Validate(temp)
+	updated, err := p.repo.Update(adID, temp)
 	if err != nil {
 		return nil, fmt.Errorf("bedrequest")
 	}
-	t = &temp
-	return t, nil
+	return updated, nil
 }

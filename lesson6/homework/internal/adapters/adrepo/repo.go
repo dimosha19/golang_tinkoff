@@ -1,6 +1,8 @@
 package adrepo
 
 import (
+	"fmt"
+	validator "github.com/dimosha19/myvalidator"
 	"homework6/internal/ads"
 	"homework6/internal/app"
 )
@@ -24,4 +26,13 @@ func (p *scliceAd) Get(adID int64) *ads.Ad {
 
 func (p *scliceAd) Size() int64 {
 	return int64(len(*p))
+}
+
+func (p *scliceAd) Update(adID int64, ad ads.Ad) (*ads.Ad, error) {
+	err := validator.Validate(ad)
+	if err != nil {
+		return nil, fmt.Errorf("bedrequest")
+	}
+	*p.Get(adID) = ad
+	return &ad, nil
 }
