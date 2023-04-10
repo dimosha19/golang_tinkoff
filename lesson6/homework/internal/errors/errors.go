@@ -1,6 +1,6 @@
 package errors
 
-import "errors"
+import "fmt"
 
-var ErrBadRequest = errors.New("bad request")
-var ErrForbidden = errors.New("forbidden")
+var ErrBadRequest = fmt.Errorf("bad request")
+var ErrForbidden = fmt.Errorf("forbidden")

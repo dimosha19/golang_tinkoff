@@ -57,18 +57,10 @@ func changeAdStatus(a app.App) fiber.Handler {
 			switch err1 {
 			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
-				break
 			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
-				break
 			}
 			return c.JSON(AdErrorResponse(err1))
-			//if errors.Is(err1, ErrBadRequest) {
-			//	c.Status(http.StatusBadRequest)
-			//} else if errors.Is(err1, ErrForbidden) {
-			//	c.Status(http.StatusForbidden)
-			//}
-			//return c.JSON(AdErrorResponse(err1))
 		}
 
 		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
@@ -100,9 +92,10 @@ func updateAd(a app.App) fiber.Handler {
 
 		ad, err1 := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 		if err1 != nil {
-			if errors.Is(err1, myerrors.ErrBadRequest) {
+			switch err1 {
+			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
-			} else if errors.Is(err1, myerrors.ErrForbidden) {
+			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
 			}
 			return c.JSON(AdErrorResponse(err1))
