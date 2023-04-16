@@ -1,5 +1,10 @@
 package httpgin
 
+import (
+	"github.com/gin-gonic/gin"
+	"homework8/internal/ads"
+)
+
 type createAdRequest struct {
 	Title  string `json:"title"`
 	Text   string `json:"text"`
@@ -25,18 +30,18 @@ type updateAdRequest struct {
 	UserID int64  `json:"user_id"`
 }
 
-//func AdSuccessResponse(ad *ads.Ad) *fiber.Map {
-//	return &fiber.Map{
-//		"data": adResponse{
-//			ID:        ad.ID,
-//			Title:     ad.Title,
-//			Text:      ad.Text,
-//			AuthorID:  ad.AuthorID,
-//			Published: ad.Published,
-//		},
-//		"error": nil,
-//	}
-//}
+func AdSuccessResponse(ad *ads.Ad) *gin.H {
+	return &gin.H{
+		"data": adResponse{
+			ID:        ad.ID,
+			Title:     ad.Title,
+			Text:      ad.Text,
+			AuthorID:  ad.AuthorID,
+			Published: ad.Published,
+		},
+		"error": nil,
+	}
+}
 
 //func AdsSuccessResponse(a []ads.Ad) *fiber.Map {
 //	var response []adResponse
@@ -56,9 +61,6 @@ type updateAdRequest struct {
 //	}
 //}
 
-//func AdErrorResponse(err error) *fiber.Map {
-//	return &fiber.Map{
-//		"data":  nil,
-//		"error": err.Error(),
-//	}
-//}
+func AdErrorResponse(err error) gin.H {
+	return gin.H{"error": err.Error()}
+}
