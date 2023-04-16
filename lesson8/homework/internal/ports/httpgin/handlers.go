@@ -120,8 +120,24 @@ func updateAd(a app.App) gin.HandlerFunc {
 
 func getAds(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Server", "matrix")
-		ad, err := a.GetAds()
+
+		pub := c.DefaultQuery("pub", "true")
+		if pub != "true" && pub != "false" && pub != "all" {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, AdErrorResponse(myerrors.ErrBadRequest))
+			return
+		}
+
+		author, err := strconv.Atoi(c.DefaultQuery("author", "-1"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, AdErrorResponse(myerrors.ErrBadRequest))
+			return
+		}
+
+		date := c.DefaultQuery("date", "all")
+
+		ad, err := a.GetAds(pub, int64(author), date)
 		if err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
@@ -129,5 +145,26 @@ func getAds(a app.App) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, AdsSuccessResponse(*ad))
+	}
+}
+
+func getAd(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		adID, err := strconv.Atoi(c.Param("ad_id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
+		}
+
+		ad, err := a.GetAd(int64(adID))
+
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, AdSuccessResponse(ad))
 	}
 }
