@@ -43,23 +43,23 @@ func AdSuccessResponse(ad *ads.Ad) *gin.H {
 	}
 }
 
-//func AdsSuccessResponse(a []ads.Ad) *fiber.Map {
-//	var response []adResponse
-//	for i := range a {
-//		response = append(response, adResponse{
-//			ID:        a[i].ID,
-//			Title:     a[i].Title,
-//			Text:      a[i].Text,
-//			AuthorID:  a[i].AuthorID,
-//			Published: a[i].Published,
-//		})
-//	}
-//
-//	return &fiber.Map{
-//		"data":  response,
-//		"error": nil,
-//	}
-//}
+func AdsSuccessResponse(a []ads.Ad) *gin.H {
+	var response []adResponse
+	for i := range a {
+		response = append(response, adResponse{
+			ID:        a[i].ID,
+			Title:     a[i].Title,
+			Text:      a[i].Text,
+			AuthorID:  a[i].AuthorID,
+			Published: a[i].Published,
+		})
+	}
+
+	return &gin.H{
+		"data":  response,
+		"error": nil,
+	}
+}
 
 func AdErrorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}

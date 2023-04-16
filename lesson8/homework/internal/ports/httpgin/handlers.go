@@ -17,19 +17,22 @@ func createAd(a app.App) gin.HandlerFunc {
 		if err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
 		}
 
-		ad, err1 := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
-		if err1 != nil {
-			if errors.Is(err1, myerrors.ErrBadRequest) {
+		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
+		if err != nil {
+			if errors.Is(err, myerrors.ErrBadRequest) {
 				c.Status(http.StatusBadRequest)
 				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+				return
 			}
 		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
+			return
 		}
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
 	}
@@ -42,17 +45,19 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
 		}
 
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
 		}
 
-		ad, err1 := a.UpdateAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
-		if err1 != nil {
-			switch err1 {
+		ad, err := a.UpdateAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
+		if err != nil {
+			switch err {
 			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
 				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
@@ -60,11 +65,13 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 				c.Status(http.StatusForbidden)
 				c.JSON(http.StatusForbidden, AdErrorResponse(err))
 			}
+			return
 		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
 		}
 
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
@@ -78,17 +85,19 @@ func updateAd(a app.App) gin.HandlerFunc {
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
 		}
 
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
 		}
 
-		ad, err1 := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		if err1 != nil {
-			switch err1 {
+		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+		if err != nil {
+			switch err {
 			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
 				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
@@ -96,30 +105,29 @@ func updateAd(a app.App) gin.HandlerFunc {
 				c.Status(http.StatusForbidden)
 				c.JSON(http.StatusForbidden, AdErrorResponse(err))
 			}
+			return
 		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
+			return
 		}
 
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
 	}
 }
 
-//func getAd(a app.App) fiber.Handler {
-//	return func(c *fiber.Ctx) error {
-//		adID, err := c.ParamsInt("ad_id")
-//		if err != nil {
-//			c.Status(http.StatusBadRequest)
-//			return c.JSON(AdErrorResponse(err))
-//		}
-//
-//		ad, err := a.GetAd(int64(adID))
-//		if err != nil {
-//			return err
-//		}
-//
-//		return c.JSON(AdSuccessResponse(ad))
-//	}
-//}
+func getAds(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Server", "matrix")
+		ad, err := a.GetAds()
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, AdsSuccessResponse(*ad))
+	}
+}

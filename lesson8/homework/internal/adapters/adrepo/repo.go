@@ -36,11 +36,10 @@ func (p *scliceAd) Update(adID int64, ad ads.Ad) (*ads.Ad, error) {
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	get, err := p.Get(adID)
-	if err != nil {
-		return nil, err
+	if adID >= (*p).Size() {
+		return nil, myerrors.ErrBadRequest
 	}
+	(*p)[adID] = ad
 	//*p.Get(adID) = ad
-	*get = ad
 	return &ad, nil
 }

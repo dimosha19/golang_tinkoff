@@ -10,7 +10,7 @@ type App interface {
 	CreateAd(title string, text string, userID int) (*ads.Ad, error)
 	UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error)
 	UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error)
-	//GetAd(adID int64) (*ads.Ad, error)
+	GetAds() (*[]ads.Ad, error)
 }
 
 type Repository interface {
@@ -73,10 +73,16 @@ func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string)
 	return updated, nil
 }
 
-//func (p *AppModel) GetAd(adID int64) (*ads.Ad, error) {
-//	t, e := p.repo.Get(adID)
-//	if e != nil {
-//		return nil, myerrors.ErrBadRequest
-//	}
-//	return t, nil
-//}
+func (p *AppModel) GetAds() (*[]ads.Ad, error) {
+	var res []ads.Ad
+	for i := int64(0); i < p.repo.Size(); i++ {
+		t, e := p.repo.Get(i)
+		if e != nil {
+			return nil, myerrors.ErrBadRequest
+		}
+		if t.Published {
+			res = append(res, *t)
+		}
+	}
+	return &res, nil
+}
