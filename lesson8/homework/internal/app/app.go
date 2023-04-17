@@ -102,27 +102,50 @@ func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string)
 	return updated, nil
 }
 
+func publishedPredicate(pub string, ad ads.Ad) bool {
+	if ad.Published && pub == "true" || !ad.Published && pub == "false" || pub == "all" {
+		return true
+	}
+	return false
+}
+
+func authorPredicate(author int64, ad ads.Ad) bool {
+	if author == -1 {
+		return true
+	}
+	if author == ad.AuthorID {
+		return true
+	}
+	return false
+}
+
+func datePredicate(date string, ad ads.Ad) bool {
+	if date == "all" {
+		return true
+	}
+	td, _ := time.Parse("02-01-06", date)
+	ady, adm, add := ad.PublishedTime.Date()
+	y, m, d := td.Date()
+	if y == ady && m == adm && d == add {
+		return true
+	}
+	return false
+}
+
+func adsPred(pub string, author int64, date string, ad ads.Ad) bool {
+	return publishedPredicate(pub, ad) && datePredicate(date, ad) && authorPredicate(author, ad)
+}
+
 func (p *AppModel) GetAds(pub string, author int64, date string) (*[]ads.Ad, error) {
 	var res []ads.Ad
-	var td time.Time
-	var err error
-	if date != "all" {
-		td, err = time.Parse("02-01-06", date)
-		if err != nil {
-			return nil, myerrors.ErrBadRequest
-		}
-	}
+
 	for i := int64(0); i < p.adrepo.Size(); i++ {
 		t, e := p.adrepo.Get(i)
 		if e != nil {
 			return nil, myerrors.ErrBadRequest
 		}
-		if t.Published && pub == "true" || !t.Published && pub == "false" || pub == "all" {
-			if date == "all" || td.Equal(t.PublishedTime) {
-				if author == -1 || author == t.AuthorID {
-					res = append(res, *t)
-				}
-			}
+		if adsPred(pub, author, date, *t) {
+			res = append(res, *t)
 		}
 	}
 	return &res, nil

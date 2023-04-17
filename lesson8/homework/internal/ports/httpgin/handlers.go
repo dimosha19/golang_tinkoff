@@ -7,6 +7,7 @@ import (
 	myerrors "homework8/internal/errors"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // Метод для создания объявления (ad)
@@ -136,6 +137,12 @@ func getAds(a app.App) gin.HandlerFunc {
 		}
 
 		date := c.DefaultQuery("date", "all")
+		_, err = time.Parse("02-01-06", date)
+		if date != "all" && err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(myerrors.ErrBadRequest))
+			return
+		}
 
 		ad, err := a.GetAds(pub, int64(author), date)
 		if err != nil {
