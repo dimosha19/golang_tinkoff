@@ -116,3 +116,46 @@ func TestListAds(t *testing.T) {
 	assert.Equal(t, ads.Data[0].AuthorID, publishedAd.Data.AuthorID)
 	assert.True(t, ads.Data[0].Published)
 }
+
+func TestListFilterAds(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	assert.NoError(t, err)
+
+	response, err := client.createAd(0, "hello", "world")
+	assert.NoError(t, err)
+
+	_, err = client.changeAdStatus(0, response.Data.ID, true)
+	assert.NoError(t, err)
+
+	response, err = client.createAd(0, "best cat", "not for sale")
+	assert.NoError(t, err)
+
+	ads, err := client.listFilterAds()
+	assert.NoError(t, err)
+	assert.Len(t, ads.Data, 1)
+	assert.Equal(t, ads.Data[0].ID, response.Data.ID)
+	assert.Equal(t, ads.Data[0].Title, response.Data.Title)
+	assert.Equal(t, ads.Data[0].Text, response.Data.Text)
+	assert.Equal(t, ads.Data[0].AuthorID, response.Data.AuthorID)
+	assert.False(t, ads.Data[0].Published)
+}
+
+func TestGetAd(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	assert.NoError(t, err)
+
+	response, err := client.createAd(0, "hello", "world")
+	assert.NoError(t, err)
+
+	ads, err := client.getAd(0)
+	assert.NoError(t, err)
+	assert.Equal(t, ads.Data.ID, response.Data.ID)
+	assert.Equal(t, ads.Data.Title, response.Data.Title)
+	assert.Equal(t, ads.Data.Text, response.Data.Text)
+	assert.Equal(t, ads.Data.AuthorID, response.Data.AuthorID)
+	assert.False(t, ads.Data.Published)
+}
