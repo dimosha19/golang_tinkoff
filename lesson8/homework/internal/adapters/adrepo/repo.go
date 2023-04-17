@@ -23,7 +23,7 @@ func (p *scliceAd) Add(ad ads.Ad) *ads.Ad {
 	p.mx.Lock()
 	(*p).r = append((*p).r, ad)
 	p.mx.Unlock()
-	return &((*p).r)[len((*p).r)-1]
+	return &((*p).r)[len((*p).r)-1] // это в рамочку
 }
 
 func (p *scliceAd) Get(adID int64) (*ads.Ad, error) {
