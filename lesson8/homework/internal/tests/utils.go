@@ -199,6 +199,34 @@ func (tc *testClient) updateAd(userID int64, adID int64, title string, text stri
 	return response, nil
 }
 
+func (tc *testClient) updateUser(userID int64, nickname string, email string) (userResponse, error) {
+	body := map[string]any{
+		"nickname": nickname,
+		"email":    email,
+		"user_id":  0,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/user/%d", userID), bytes.NewReader(data))
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+
+	return response, nil
+}
+
 func (tc *testClient) listAds() (adsResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads", nil)
 	if err != nil {
@@ -209,6 +237,21 @@ func (tc *testClient) listAds() (adsResponse, error) {
 	err = tc.getResponse(req, &response)
 	if err != nil {
 		return adsResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) getUser(userID int64) (userResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/user/%d", userID), nil)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
 	}
 
 	return response, nil

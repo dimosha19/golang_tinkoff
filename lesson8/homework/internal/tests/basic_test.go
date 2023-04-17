@@ -6,6 +6,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreateUser(t *testing.T) {
+	client := getTestClient()
+	response, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	assert.NoError(t, err)
+	assert.Zero(t, response.Data.UserID)
+	assert.Equal(t, response.Data.Nickname, "dimosha")
+	assert.Equal(t, response.Data.Email, "dmitriy@mail.ru")
+}
+
+func TestGetUser(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	assert.NoError(t, err)
+
+	user, err := client.getUser(int64(0))
+	assert.NoError(t, err)
+	assert.Equal(t, user.Data.UserID, int64(0))
+	assert.Equal(t, user.Data.Nickname, "dimosha")
+	assert.Equal(t, user.Data.Email, "dmitriy@mail.ru")
+}
+
+func TestUpdateUser(t *testing.T) {
+	client := getTestClient()
+
+	response, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	assert.NoError(t, err)
+
+	response, err = client.updateUser(0, "D1", "D2")
+	assert.NoError(t, err)
+	assert.Equal(t, response.Data.Nickname, "D1")
+	assert.Equal(t, response.Data.Email, "D2")
+}
+
 func TestCreateAd(t *testing.T) {
 	client := getTestClient()
 	for i := 0; i < 124; i++ {
