@@ -9,7 +9,7 @@ import (
 )
 
 type App interface {
-	CreateAd(title string, text string, userID int) (*ads.Ad, error)
+	CreateAd(title string, text string, userID int64) (*ads.Ad, error)
 	UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error)
 	UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error)
 	GetAds(pub string, author int64, date string) (*[]ads.Ad, error)
@@ -43,9 +43,13 @@ type AppModel struct {
 	userrepo UserRepository
 }
 
-func (p *AppModel) CreateAd(title string, text string, userID int) (*ads.Ad, error) {
+func (p *AppModel) CreateAd(title string, text string, userID int64) (*ads.Ad, error) {
+	_, err := p.userrepo.Get(userID)
+	if err != nil {
+		return nil, myerrors.ErrBadRequest
+	}
 	res := ads.Ad{ID: p.adrepo.Size(), Title: title, Text: text, AuthorID: int64(userID), PublishedTime: time.Now().UTC(), UpdateTime: time.Now().UTC()}
-	err := validator.Validate(res)
+	err = validator.Validate(res)
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
@@ -54,6 +58,10 @@ func (p *AppModel) CreateAd(title string, text string, userID int) (*ads.Ad, err
 }
 
 func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error) {
+	_, err := p.userrepo.Get(userID)
+	if err != nil {
+		return nil, myerrors.ErrBadRequest
+	}
 	t, e := p.adrepo.Get(adID)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
@@ -72,6 +80,10 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 }
 
 func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error) {
+	_, err := p.userrepo.Get(userID)
+	if err != nil {
+		return nil, myerrors.ErrBadRequest
+	}
 	t, e := p.adrepo.Get(adID)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest

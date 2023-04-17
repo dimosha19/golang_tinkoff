@@ -22,8 +22,18 @@ type adData struct {
 	Published bool   `json:"published"`
 }
 
+type userData struct {
+	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
+	UserID   int64  `json:"user_id"`
+}
+
 type adResponse struct {
 	Data adData `json:"data"`
+}
+
+type userResponse struct {
+	Data userData `json:"data"`
 }
 
 type adsResponse struct {
@@ -102,6 +112,33 @@ func (tc *testClient) createAd(userID int64, title string, text string) (adRespo
 	err = tc.getResponse(req, &response)
 	if err != nil {
 		return adResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) createUser(nick string, email string) (userResponse, error) {
+	body := map[string]any{
+		"nickname": nick,
+		"email":    email,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, tc.baseURL+"/api/v1/user", bytes.NewReader(data))
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
 	}
 
 	return response, nil

@@ -20,7 +20,7 @@ func createAd(a app.App) gin.HandlerFunc {
 			return
 		}
 
-		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
+		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, reqBody.UserID)
 		if err != nil {
 			if errors.Is(err, myerrors.ErrBadRequest) {
 				c.Status(http.StatusBadRequest)
