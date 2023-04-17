@@ -31,10 +31,10 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	client := getTestClient()
 
-	response, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
-	response, err = client.updateUser(0, "D1", "D2")
+	response, err := client.updateUser(0, "D1", "D2")
 	assert.NoError(t, err)
 	assert.Equal(t, response.Data.Nickname, "D1")
 	assert.Equal(t, response.Data.Email, "D2")
