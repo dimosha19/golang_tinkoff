@@ -4,6 +4,7 @@ import (
 	validator "github.com/dimosha19/myvalidator"
 	"homework8/internal/ads"
 	myerrors "homework8/internal/errors"
+	"homework8/internal/users"
 	"time"
 )
 
@@ -13,35 +14,47 @@ type App interface {
 	UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error)
 	GetAds(pub string, author int64, date string) (*[]ads.Ad, error)
 	GetAd(adID int64) (*ads.Ad, error)
+
+	CreateUser(nickname string, email string) (*users.User, error)
+	GetUser(userID int64) (*users.User, error)
+	UpdateUser(userID int64, nickname string, email string, authorID int64) (*users.User, error)
 }
 
-type Repository interface {
+type AdRepository interface {
 	Add(ad ads.Ad) *ads.Ad
 	Get(adID int64) (*ads.Ad, error)
 	Update(adID int64, ad ads.Ad) (*ads.Ad, error)
 	Size() int64
 }
 
-func NewApp(repo Repository) App {
-	return &AppModel{repo}
+type UserRepository interface {
+	Add(user users.User) *users.User
+	Get(userID int64) (*users.User, error)
+	Update(userID int64, user users.User) (*users.User, error)
+	Size() int64
+}
+
+func NewApp(adrepo AdRepository, userrepo UserRepository) App {
+	return &AppModel{adrepo, userrepo}
 }
 
 type AppModel struct {
-	repo Repository
+	adrepo   AdRepository
+	userrepo UserRepository
 }
 
 func (p *AppModel) CreateAd(title string, text string, userID int) (*ads.Ad, error) {
-	res := ads.Ad{ID: p.repo.Size(), Title: title, Text: text, AuthorID: int64(userID), PublishedTime: time.Now().UTC(), UpdateTime: time.Now().UTC()}
+	res := ads.Ad{ID: p.adrepo.Size(), Title: title, Text: text, AuthorID: int64(userID), PublishedTime: time.Now().UTC(), UpdateTime: time.Now().UTC()}
 	err := validator.Validate(res)
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	t := p.repo.Add(res)
+	t := p.adrepo.Add(res)
 	return t, nil
 }
 
 func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error) {
-	t, e := p.repo.Get(adID)
+	t, e := p.adrepo.Get(adID)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
@@ -51,7 +64,7 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 	}
 	temp.Published = published
 	temp.UpdateTime = time.Now().UTC()
-	updated, err := p.repo.Update(adID, temp)
+	updated, err := p.adrepo.Update(adID, temp)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +72,7 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 }
 
 func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error) {
-	t, e := p.repo.Get(adID)
+	t, e := p.adrepo.Get(adID)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
@@ -70,7 +83,7 @@ func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string)
 	temp.Title = title
 	temp.Text = text
 	temp.UpdateTime = time.Now().UTC()
-	updated, err := p.repo.Update(adID, temp)
+	updated, err := p.adrepo.Update(adID, temp)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +100,8 @@ func (p *AppModel) GetAds(pub string, author int64, date string) (*[]ads.Ad, err
 			return nil, myerrors.ErrBadRequest
 		}
 	}
-	for i := int64(0); i < p.repo.Size(); i++ {
-		t, e := p.repo.Get(i)
+	for i := int64(0); i < p.adrepo.Size(); i++ {
+		t, e := p.adrepo.Get(i)
 		if e != nil {
 			return nil, myerrors.ErrBadRequest
 		}
@@ -104,9 +117,45 @@ func (p *AppModel) GetAds(pub string, author int64, date string) (*[]ads.Ad, err
 }
 
 func (p *AppModel) GetAd(adID int64) (*ads.Ad, error) {
-	t, e := p.repo.Get(adID)
+	t, e := p.adrepo.Get(adID)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
 	return t, nil
+}
+
+func (p *AppModel) CreateUser(nickname string, email string) (*users.User, error) {
+	res := users.User{ID: p.userrepo.Size(), Nickname: nickname, Email: email}
+	err := validator.Validate(res)
+	if err != nil {
+		return nil, myerrors.ErrBadRequest
+	}
+	t := p.userrepo.Add(res)
+	return t, nil
+}
+
+func (p *AppModel) GetUser(userID int64) (*users.User, error) {
+	t, e := p.userrepo.Get(userID)
+	if e != nil {
+		return nil, myerrors.ErrBadRequest
+	}
+	return t, nil
+}
+
+func (p *AppModel) UpdateUser(userID int64, nickname string, email string, authorID int64) (*users.User, error) {
+	t, e := p.userrepo.Get(userID)
+	if e != nil {
+		return nil, myerrors.ErrBadRequest
+	}
+	temp := *t
+	if t.ID != authorID {
+		return nil, myerrors.ErrForbidden
+	}
+	temp.Nickname = nickname
+	temp.Email = email
+	updated, err := p.userrepo.Update(userID, temp)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
 }

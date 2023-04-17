@@ -16,7 +16,7 @@ func createAd(a app.App) gin.HandlerFunc {
 		err := c.ShouldBindJSON(&reqBody)
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
@@ -24,14 +24,14 @@ func createAd(a app.App) gin.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, myerrors.ErrBadRequest) {
 				c.Status(http.StatusBadRequest)
-				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
 				return
 			}
 		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return
 		}
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
@@ -44,14 +44,14 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 		var reqBody changeAdStatusRequest
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
@@ -60,17 +60,17 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 			switch err {
 			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
-				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
-				c.JSON(http.StatusForbidden, AdErrorResponse(err))
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
 			}
 			return
 		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
@@ -84,33 +84,33 @@ func updateAd(a app.App) gin.HandlerFunc {
 		var reqBody updateAdRequest
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
 		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+
 		if err != nil {
 			switch err {
 			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
-				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
-				c.JSON(http.StatusForbidden, AdErrorResponse(err))
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
 			}
 			return
 		}
-
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return
 		}
 
@@ -124,14 +124,14 @@ func getAds(a app.App) gin.HandlerFunc {
 		pub := c.DefaultQuery("pub", "true")
 		if pub != "true" && pub != "false" && pub != "all" {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(myerrors.ErrBadRequest))
+			c.JSON(http.StatusBadRequest, ErrorResponse(myerrors.ErrBadRequest))
 			return
 		}
 
 		author, err := strconv.Atoi(c.DefaultQuery("author", "-1"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(myerrors.ErrBadRequest))
+			c.JSON(http.StatusBadRequest, ErrorResponse(myerrors.ErrBadRequest))
 			return
 		}
 
@@ -140,7 +140,7 @@ func getAds(a app.App) gin.HandlerFunc {
 		ad, err := a.GetAds(pub, int64(author), date)
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
@@ -153,7 +153,7 @@ func getAd(a app.App) gin.HandlerFunc {
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
@@ -161,10 +161,98 @@ func getAd(a app.App) gin.HandlerFunc {
 
 		if err != nil {
 			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
+	}
+}
+
+func createUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody createUserRequest
+		err := c.ShouldBindJSON(&reqBody)
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.CreateUser(reqBody.Nickname, reqBody.Email)
+		if err != nil {
+			if errors.Is(err, myerrors.ErrBadRequest) {
+				c.Status(http.StatusBadRequest)
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
+				return
+			}
+		}
+
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
+}
+
+func updateUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody updateUserRequest
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		userID, err := strconv.Atoi(c.Param("user_id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.UpdateUser(int64(userID), reqBody.Nickname, reqBody.Email, reqBody.UserID)
+
+		if err != nil {
+			switch err {
+			case myerrors.ErrBadRequest:
+				c.Status(http.StatusBadRequest)
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			case myerrors.ErrForbidden:
+				c.Status(http.StatusForbidden)
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
+			}
+			return
+		}
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
+}
+
+func getUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := strconv.Atoi(c.Param("user_id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.GetUser(int64(userID))
+
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
 	}
 }

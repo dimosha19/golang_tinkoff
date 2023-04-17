@@ -9,8 +9,9 @@ import (
 
 type scliceAd []ads.Ad
 
-func New() app.Repository {
+func New() app.AdRepository {
 	res := scliceAd{}
+	//mx := *sync.RWMutex //TODO mutex
 	return &res
 }
 
