@@ -274,7 +274,7 @@ func (tc *testClient) getAd(adID int64) (adResponse, error) {
 }
 
 func (tc *testClient) listFilterAds() (adsResponse, error) {
-	d := time.Now()
+	d := time.Now().UTC()
 	s := d.Format("02-01-06")
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads/?pub=false&date=%s", s), nil)
 	if err != nil {

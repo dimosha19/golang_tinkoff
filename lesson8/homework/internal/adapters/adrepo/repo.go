@@ -28,7 +28,7 @@ func (p *scliceAd) Add(ad ads.Ad) *ads.Ad {
 
 func (p *scliceAd) Get(adID int64) (*ads.Ad, error) {
 	defer p.mx.Unlock()
-	if adID < (*p).Size() {
+	if adID < p.Size() {
 		p.mx.Lock()
 		res := (*p).r[adID]
 		return &res, nil
@@ -48,7 +48,7 @@ func (p *scliceAd) Update(adID int64, ad ads.Ad) (*ads.Ad, error) {
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	if adID >= (*p).Size() {
+	if adID >= p.Size() {
 		return nil, myerrors.ErrBadRequest
 	}
 	(*p).r[adID] = ad

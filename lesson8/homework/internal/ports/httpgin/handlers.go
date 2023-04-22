@@ -129,6 +129,8 @@ func getAds(a app.App) gin.HandlerFunc {
 			return
 		}
 
+		title := c.DefaultQuery("title", "")
+
 		author, err := strconv.Atoi(c.DefaultQuery("author", "-1"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
@@ -144,7 +146,7 @@ func getAds(a app.App) gin.HandlerFunc {
 			return
 		}
 
-		ad, err := a.GetAds(pub, int64(author), date)
+		ad, err := a.GetAds(pub, int64(author), date, title)
 		if err != nil {
 			c.Status(http.StatusBadRequest)
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))

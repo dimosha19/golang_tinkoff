@@ -29,7 +29,7 @@ func (p *scliceUser) Add(user users.User) *users.User {
 func (p *scliceUser) Get(userID int64) (*users.User, error) {
 	p.mx.Lock()
 	defer p.mx.Unlock()
-	if userID < (*p).Size() {
+	if userID < p.Size() {
 		res := (*p).r[userID]
 		return &res, nil
 	}
@@ -47,7 +47,7 @@ func (p *scliceUser) Update(userID int64, user users.User) (*users.User, error) 
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	if userID >= (*p).Size() {
+	if userID >= p.Size() {
 		return nil, myerrors.ErrBadRequest
 	}
 	(*p).r[userID] = user

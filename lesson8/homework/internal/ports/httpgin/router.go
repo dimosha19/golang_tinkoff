@@ -7,14 +7,14 @@ import (
 
 func AppRouter(r *gin.RouterGroup, a app.App) {
 	// ad
-	r.POST("/ads", myMV, createAd(a))
-	r.PUT("/ads/:ad_id/status", myMV, changeAdStatus(a))
-	r.PUT("/ads/:ad_id", myMV, updateAd(a))
-	r.GET("/ads/:ad_id", myMV, getAd(a))
-	r.GET("/ads", myMV, getAds(a))
+	r.POST("/ads", createAd(a))
+	r.PUT("/ads/:ad_id/status", changeAdStatus(a))
+	r.PUT("/ads/:ad_id", updateAd(a))
+	r.GET("/ads/:ad_id", getAd(a))
+	r.GET("/ads", getAds(a))
 
 	// user
-	r.POST("/user", myMV, createUser(a))
-	r.GET("/user/:user_id", myMV, getUser(a))
-	r.PUT("/user/:user_id", myMV, updateUser(a))
+	r.POST("/user", createUser(a))
+	r.GET("/user/:user_id", getUser(a))
+	r.PUT("/user/:user_id", updateUser(a))
 }

@@ -12,7 +12,7 @@ type App interface {
 	CreateAd(title string, text string, userID int64) (*ads.Ad, error)
 	UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error)
 	UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error)
-	GetAds(pub string, author int64, date string) (*[]ads.Ad, error)
+	GetAds(pub string, author int64, date string, title string) (*[]ads.Ad, error)
 	GetAd(adID int64) (*ads.Ad, error)
 
 	CreateUser(nickname string, email string) (*users.User, error)
@@ -132,11 +132,18 @@ func datePredicate(date string, ad ads.Ad) bool {
 	return false
 }
 
-func adsPred(pub string, author int64, date string, ad ads.Ad) bool {
-	return publishedPredicate(pub, ad) && datePredicate(date, ad) && authorPredicate(author, ad)
+func titlePredicate(title string, ad ads.Ad) bool {
+	if ad.Title == title {
+		return true
+	}
+	return false
 }
 
-func (p *AppModel) GetAds(pub string, author int64, date string) (*[]ads.Ad, error) {
+func adsPred(pub string, author int64, date string, title string, ad ads.Ad) bool {
+	return publishedPredicate(pub, ad) && datePredicate(date, ad) && authorPredicate(author, ad) && titlePredicate(title, ad)
+}
+
+func (p *AppModel) GetAds(pub string, author int64, date string, title string) (*[]ads.Ad, error) {
 	var res []ads.Ad
 
 	for i := int64(0); i < p.adrepo.Size(); i++ {
@@ -144,7 +151,7 @@ func (p *AppModel) GetAds(pub string, author int64, date string) (*[]ads.Ad, err
 		if e != nil {
 			return nil, myerrors.ErrBadRequest
 		}
-		if adsPred(pub, author, date, *t) {
+		if adsPred(pub, author, date, title, *t) {
 			res = append(res, *t)
 		}
 	}
