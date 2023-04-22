@@ -133,10 +133,7 @@ func datePredicate(date string, ad ads.Ad) bool {
 }
 
 func titlePredicate(title string, ad ads.Ad) bool {
-	if ad.Title == title {
-		return true
-	}
-	return false
+	return ad.Title == title
 }
 
 func adsPred(pub string, author int64, date string, title string, ad ads.Ad) bool {
