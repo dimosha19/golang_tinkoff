@@ -10,9 +10,11 @@ import (
 func NewHTTPServer(port string, a app.App) *http.Server {
 	gin.SetMode(gin.ReleaseMode)
 	handler := gin.New()
+	handler.Use(gin.Recovery())
+	handler.Use(myMV)
+	api := handler.Group("/api/v1")
 	s := &http.Server{Addr: port, Handler: handler}
-
-	// todo: add your own logic
+	AppRouter(api, a)
 
 	return s
 }
