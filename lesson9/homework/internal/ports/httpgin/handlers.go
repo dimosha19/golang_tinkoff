@@ -265,3 +265,49 @@ func getUser(a app.App) gin.HandlerFunc {
 		c.JSON(http.StatusOK, UserSuccessResponse(user))
 	}
 }
+
+func deleteAd(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody createAdRequest
+		err := c.ShouldBindJSON(&reqBody)
+		adID, err := strconv.Atoi(c.Param("ad_id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		err = a.DeleteAd(int64(adID), reqBody.UserID)
+
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, DeleteSuccessResponse(int64(adID)))
+	}
+}
+
+func deleteUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody createAdRequest
+		err := c.ShouldBindJSON(&reqBody)
+		adID, err := strconv.Atoi(c.Param("user_id"))
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		err = a.DeleteUser(int64(adID))
+
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, DeleteSuccessResponse(int64(adID)))
+	}
+}
