@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"homework9/internal/adapters/userrepo"
 	"net"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestGRRPCCreateUser(t *testing.T) {
 		srv.Stop()
 	})
 
-	svc := grpcPort.NewService(app.NewApp(adrepo.New()))
+	svc := grpcPort.NewService(app.NewApp(adrepo.New(), userrepo.New()))
 	grpcPort.RegisterAdServiceServer(srv, svc)
 
 	go func() {
