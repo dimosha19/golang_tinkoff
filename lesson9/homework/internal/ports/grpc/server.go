@@ -6,12 +6,13 @@ import (
 )
 
 type GRPCService struct {
-	a app.App
+	a      app.App
+	Server *grpc.Server
 }
 
 func NewService(a app.App) *GRPCService {
 	grpcServer := grpc.NewServer()
-	grpcService := &GRPCService{a}
+	grpcService := &GRPCService{a, grpcServer}
 	RegisterAdServiceServer(grpcServer, grpcService)
 
 	return grpcService
