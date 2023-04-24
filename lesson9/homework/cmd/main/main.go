@@ -27,16 +27,7 @@ const (
 func main() {
 
 	a := app.NewApp(adrepo.New(), userrepo.New())
-	//lis, err := net.Listen("tcp", grpcPort)
-	//if err != nil {
-	//	return
-	//}
 	httpServer := httpgin.NewHTTPServer(httpPort, a)
-	//grpsServer := grpc.NewService(a)
-	//err = httpServer.ListenAndServe()
-	//if err != nil {
-	//	return
-	//}
 
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {

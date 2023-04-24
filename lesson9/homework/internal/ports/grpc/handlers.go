@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (G GRPCService) CreateAd(ctx context.Context, request *CreateAdRequest) (*AdResponse, error) {
+func (G Service) CreateAd(ctx context.Context, request *CreateAdRequest) (*AdResponse, error) {
 	ad, err := G.a.CreateAd(request.Title, request.Text, request.UserId)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (G GRPCService) CreateAd(ctx context.Context, request *CreateAdRequest) (*A
 	}, nil
 }
 
-func (G GRPCService) ChangeAdStatus(ctx context.Context, request *ChangeAdStatusRequest) (*AdResponse, error) {
+func (G Service) ChangeAdStatus(ctx context.Context, request *ChangeAdStatusRequest) (*AdResponse, error) {
 	ad, err := G.a.UpdateAdStatus(request.AdId, request.UserId, request.Published)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (G GRPCService) ChangeAdStatus(ctx context.Context, request *ChangeAdStatus
 	}, nil
 }
 
-func (G GRPCService) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*AdResponse, error) {
+func (G Service) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*AdResponse, error) {
 	ad, err := G.a.UpdateAd(request.AdId, request.UserId, request.Title, request.Text)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (G GRPCService) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*A
 	}, nil
 }
 
-func (G GRPCService) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, error) {
+func (G Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, error) {
 	pub := ads.Pub
 	if pub != "true" && pub != "false" && pub != "all" {
 		return nil, errors.New("invalid pub filter")
@@ -91,7 +91,7 @@ func (G GRPCService) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse,
 
 }
 
-func (G GRPCService) CreateUser(ctx context.Context, request *CreateUserRequest) (*UserResponse, error) {
+func (G Service) CreateUser(ctx context.Context, request *CreateUserRequest) (*UserResponse, error) {
 	user, err := G.a.CreateUser(request.Nickname, request.Email)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (G GRPCService) CreateUser(ctx context.Context, request *CreateUserRequest)
 	}, nil
 }
 
-func (G GRPCService) GetUser(ctx context.Context, request *GetUserRequest) (*UserResponse, error) {
+func (G Service) GetUser(ctx context.Context, request *GetUserRequest) (*UserResponse, error) {
 	user, err := G.a.GetUser(request.Id)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (G GRPCService) GetUser(ctx context.Context, request *GetUserRequest) (*Use
 	}, nil
 }
 
-func (G GRPCService) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*Success, error) {
+func (G Service) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*Success, error) {
 	err := G.a.DeleteUser(request.Id)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (G GRPCService) DeleteUser(ctx context.Context, request *DeleteUserRequest)
 	}, nil
 }
 
-func (G GRPCService) DeleteAd(ctx context.Context, request *DeleteAdRequest) (*Success, error) {
+func (G Service) DeleteAd(ctx context.Context, request *DeleteAdRequest) (*Success, error) {
 	err := G.a.DeleteAd(request.AdId, request.AuthorId)
 	if err != nil {
 		return nil, err
