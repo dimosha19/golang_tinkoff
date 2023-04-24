@@ -4,6 +4,7 @@ import (
 	"homework9/internal/ads"
 	myerrors "homework9/internal/errors"
 	"homework9/internal/users"
+	"strings"
 	"time"
 )
 
@@ -131,7 +132,7 @@ func datePredicate(date string, ad ads.Ad) bool {
 }
 
 func titlePredicate(title string, ad ads.Ad) bool {
-	return ad.Title == title || title == ""
+	return strings.Contains(ad.Title, title) || title == ""
 }
 
 func adsPred(pub string, author int64, date string, title string, ad ads.Ad) bool {
