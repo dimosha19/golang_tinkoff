@@ -1,8 +1,10 @@
 package httpfiber
 
 import (
+	"errors"
 	"github.com/gofiber/fiber/v2"
 	"homework6/internal/app"
+	myerrors "homework6/internal/errors"
 	"net/http"
 )
 
@@ -16,9 +18,12 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
-		if err != nil {
-			return c.JSON(AdErrorResponse(err))
+		ad, err1 := a.CreateAd(reqBody.Title, reqBody.Text, int(reqBody.UserID))
+		if err1 != nil {
+			if errors.Is(err1, myerrors.ErrBadRequest) {
+				c.Status(http.StatusBadRequest)
+			}
+			return c.JSON(AdErrorResponse(err1))
 		}
 
 		// TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
@@ -47,12 +52,15 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		ad, err := a.UpdateAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
-		if err != nil {
-			if err.Error() == "forbidden" {
+		ad, err1 := a.UpdateAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
+		if err1 != nil {
+			switch err1 {
+			case myerrors.ErrBadRequest:
+				c.Status(http.StatusBadRequest)
+			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
 			}
-			return c.JSON(AdErrorResponse(err))
+			return c.JSON(AdErrorResponse(err1))
 		}
 
 		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
@@ -82,12 +90,15 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		if err != nil {
-			if err.Error() == "forbidden" {
+		ad, err1 := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+		if err1 != nil {
+			switch err1 {
+			case myerrors.ErrBadRequest:
+				c.Status(http.StatusBadRequest)
+			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
 			}
-			return c.JSON(AdErrorResponse(err))
+			return c.JSON(AdErrorResponse(err1))
 		}
 
 		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)

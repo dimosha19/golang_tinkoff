@@ -1,8 +1,9 @@
 package app
 
 import (
-	"fmt"
+	"github.com/dimosha19/myvalidator"
 	"homework6/internal/ads"
+	myerrors "homework6/internal/errors"
 )
 
 type App interface {
@@ -14,6 +15,7 @@ type App interface {
 type Repository interface {
 	Add(ad ads.Ad) *ads.Ad
 	Get(adID int64) *ads.Ad
+	Update(adID int64, ad ads.Ad) (*ads.Ad, error)
 	Size() int64
 }
 
@@ -27,25 +29,39 @@ type AppModel struct {
 
 func (p *AppModel) CreateAd(title string, text string, userID int) (*ads.Ad, error) {
 	res := ads.Ad{ID: p.repo.Size(), Title: title, Text: text, AuthorID: int64(userID)}
+	err := validator.Validate(res)
+	if err != nil {
+		return nil, myerrors.ErrBadRequest
+	}
 	t := p.repo.Add(res)
 	return t, nil
 }
 
 func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error) {
 	t := p.repo.Get(adID)
-	t.Published = published
+	temp := *t
 	if t.AuthorID != userID {
-		return &ads.Ad{}, fmt.Errorf("forbidden")
+		return nil, myerrors.ErrForbidden
 	}
-	return t, nil
+	temp.Published = published
+	updated, err := p.repo.Update(adID, temp)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
 
 func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error) {
 	t := p.repo.Get(adID)
+	temp := *t
 	if t.AuthorID != userID {
-		return &ads.Ad{}, fmt.Errorf("forbidden")
+		return nil, myerrors.ErrForbidden
 	}
-	t.Text = text
-	t.Title = title
-	return t, nil
+	temp.Title = title
+	temp.Text = text
+	updated, err := p.repo.Update(adID, temp)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
