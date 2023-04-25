@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func (G Service) CreateAd(ctx context.Context, request *CreateAdRequest) (*AdResponse, error) {
-	ad, err := G.a.CreateAd(request.Title, request.Text, request.UserId)
+func (s Service) CreateAd(ctx context.Context, request *CreateAdRequest) (*AdResponse, error) {
+	ad, err := s.a.CreateAd(request.Title, request.Text, request.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +24,8 @@ func (G Service) CreateAd(ctx context.Context, request *CreateAdRequest) (*AdRes
 	}, nil
 }
 
-func (G Service) ChangeAdStatus(ctx context.Context, request *ChangeAdStatusRequest) (*AdResponse, error) {
-	ad, err := G.a.UpdateAdStatus(request.AdId, request.UserId, request.Published)
+func (s Service) ChangeAdStatus(ctx context.Context, request *ChangeAdStatusRequest) (*AdResponse, error) {
+	ad, err := s.a.UpdateAdStatus(request.AdId, request.UserId, request.Published)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +40,8 @@ func (G Service) ChangeAdStatus(ctx context.Context, request *ChangeAdStatusRequ
 	}, nil
 }
 
-func (G Service) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*AdResponse, error) {
-	ad, err := G.a.UpdateAd(request.AdId, request.UserId, request.Title, request.Text)
+func (s Service) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*AdResponse, error) {
+	ad, err := s.a.UpdateAd(request.AdId, request.UserId, request.Title, request.Text)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (G Service) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*AdRes
 	}, nil
 }
 
-func (G Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, error) {
+func (s Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, error) {
 	pub := ads.Pub
 	if pub != "true" && pub != "false" && pub != "all" {
 		return nil, errors.New("invalid pub filter")
@@ -71,7 +71,7 @@ func (G Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, err
 		return nil, errors.New("invalid date filter")
 	}
 
-	ad, err := G.a.GetAds(ads.Pub, int64(author), ads.Date, ads.Title)
+	ad, err := s.a.GetAds(ads.Pub, int64(author), ads.Date, ads.Title)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +91,8 @@ func (G Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, err
 
 }
 
-func (G Service) CreateUser(ctx context.Context, request *CreateUserRequest) (*UserResponse, error) {
-	user, err := G.a.CreateUser(request.Nickname, request.Email)
+func (s Service) CreateUser(ctx context.Context, request *CreateUserRequest) (*UserResponse, error) {
+	user, err := s.a.CreateUser(request.Nickname, request.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +103,8 @@ func (G Service) CreateUser(ctx context.Context, request *CreateUserRequest) (*U
 	}, nil
 }
 
-func (G Service) GetUser(ctx context.Context, request *GetUserRequest) (*UserResponse, error) {
-	user, err := G.a.GetUser(request.Id)
+func (s Service) GetUser(ctx context.Context, request *GetUserRequest) (*UserResponse, error) {
+	user, err := s.a.GetUser(request.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +115,8 @@ func (G Service) GetUser(ctx context.Context, request *GetUserRequest) (*UserRes
 	}, nil
 }
 
-func (G Service) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*Success, error) {
-	err := G.a.DeleteUser(request.Id)
+func (s Service) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*Success, error) {
+	err := s.a.DeleteUser(request.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +125,8 @@ func (G Service) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*S
 	}, nil
 }
 
-func (G Service) DeleteAd(ctx context.Context, request *DeleteAdRequest) (*Success, error) {
-	err := G.a.DeleteAd(request.AdId, request.AuthorId)
+func (s Service) DeleteAd(ctx context.Context, request *DeleteAdRequest) (*Success, error) {
+	err := s.a.DeleteAd(request.AdId, request.AuthorId)
 	if err != nil {
 		return nil, err
 	}

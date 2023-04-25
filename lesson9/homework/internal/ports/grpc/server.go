@@ -12,7 +12,8 @@ type Service struct {
 }
 
 func NewService(a app.App) *Service {
-	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(ExampleUnaryServerInterceptor, recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(grpcPanicRecoveryHandler))))
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(SimpleLogger,
+		recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(grpcPanicRecoveryHandler))))
 	grpcService := &Service{a, grpcServer}
 	RegisterAdServiceServer(grpcServer, grpcService)
 
