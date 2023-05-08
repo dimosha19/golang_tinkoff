@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestChangeStatusAdOfAnotherUser(t *testing.T) {
 	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.changeAdStatus(1, resp.Data.ID, true)
+	_, err = client.changeAdStatus(1, strconv.Itoa(int(resp.Data.ID)), true)
 	assert.ErrorIs(t, err, ErrForbidden)
 }
 
@@ -32,7 +33,7 @@ func TestUpdateAdOfAnotherUser(t *testing.T) {
 	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(1, resp.Data.ID, "title", "text")
+	_, err = client.updateAd(1, strconv.Itoa(int(resp.Data.ID)), "title", "text")
 	assert.ErrorIs(t, err, ErrForbidden)
 }
 

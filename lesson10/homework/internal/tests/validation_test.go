@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -14,6 +15,13 @@ func TestCreateAd_EmptyTitle(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = client.createAd(0, "", "world")
+	assert.ErrorIs(t, err, ErrBadRequest)
+}
+
+func TestCreateUser_EmptyNick(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser("", "dmitriy@mail.ru")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
@@ -60,7 +68,7 @@ func TestUpdateAd_EmptyTitle(t *testing.T) {
 	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(0, resp.Data.ID, "", "new_world")
+	_, err = client.updateAd(0, strconv.Itoa(int(resp.Data.ID)), "", "new_world")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
@@ -75,7 +83,7 @@ func TestUpdateAd_TooLongTitle(t *testing.T) {
 
 	title := strings.Repeat("a", 101)
 
-	_, err = client.updateAd(0, resp.Data.ID, title, "world")
+	_, err = client.updateAd(0, strconv.Itoa(int(resp.Data.ID)), title, "world")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
@@ -88,7 +96,7 @@ func TestUpdateAd_EmptyText(t *testing.T) {
 	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(0, resp.Data.ID, "title", "")
+	_, err = client.updateAd(0, strconv.Itoa(int(resp.Data.ID)), "title", "")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
@@ -103,6 +111,6 @@ func TestUpdateAd_TooLongText(t *testing.T) {
 	resp, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.updateAd(0, resp.Data.ID, "title", text)
+	_, err = client.updateAd(0, strconv.Itoa(int(resp.Data.ID)), "title", text)
 	assert.ErrorIs(t, err, ErrBadRequest)
 }

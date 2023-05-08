@@ -35,7 +35,6 @@ type UserRepository interface {
 	Get(userID int64) (*users.User, error)
 	Update(userID int64, nickname string, email string, authorID int64) (*users.User, error)
 	Delete(userID int64) bool
-	Idxs() []int64
 }
 
 func NewApp(adrepo AdRepository, userrepo UserRepository) App {
