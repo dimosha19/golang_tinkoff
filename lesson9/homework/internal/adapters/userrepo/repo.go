@@ -8,48 +8,75 @@ import (
 	"sync"
 )
 
-type scliceUser struct {
-	mx *sync.Mutex
-	r  []users.User
+type mapUser struct {
+	mx  *sync.Mutex
+	r   map[int64]users.User
+	idx int64
 }
 
 func New() app.UserRepository {
 	mx := sync.Mutex{}
-	res := scliceUser{mx: &mx}
+	res := mapUser{r: make(map[int64]users.User), mx: &mx, idx: 0}
 	return &res
 }
 
-func (p *scliceUser) Add(user users.User) *users.User {
+func (p *mapUser) Add(nickname string, email string) (*users.User, error) {
+	res := users.User{ID: p.idx, Nickname: nickname, Email: email}
+	p.idx++
+	err := validator.Validate(res)
+	if err != nil {
+		return nil, myerrors.ErrBadRequest
+	}
 	p.mx.Lock()
 	defer p.mx.Unlock()
-	(*p).r = append((*p).r, user)
-	return &(*p).r[len((*p).r)-1]
+	(p.r)[res.ID] = res
+	a := (p.r)[res.ID]
+	return &a, nil
 }
 
-func (p *scliceUser) Get(userID int64) (*users.User, error) {
+func (p *mapUser) Get(userID int64) (*users.User, error) {
 	p.mx.Lock()
 	defer p.mx.Unlock()
-	if userID < p.Size() {
-		res := (*p).r[userID]
+	res, ok := (p.r)[userID]
+	if ok {
 		return &res, nil
 	}
 	return nil, myerrors.ErrBadRequest
 }
 
-func (p *scliceUser) Size() int64 {
-	return int64(len((*p).r))
-}
-
-func (p *scliceUser) Update(userID int64, user users.User) (*users.User, error) {
+func (p *mapUser) Update(userID int64, nickname string, email string, authorID int64) (*users.User, error) {
+	temp := (p.r)[userID]
+	if temp.ID != authorID {
+		return nil, myerrors.ErrForbidden
+	}
+	temp.Nickname = nickname
+	temp.Email = email
 	p.mx.Lock()
 	defer p.mx.Unlock()
-	err := validator.Validate(user)
+	err := validator.Validate(temp)
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	if userID >= p.Size() {
+	_, ok := (p.r)[userID]
+	if !ok {
 		return nil, myerrors.ErrBadRequest
 	}
-	(*p).r[userID] = user
-	return &user, nil
+	(p.r)[userID] = temp
+	return &temp, nil
+}
+
+func (p *mapUser) Idxs() []int64 {
+	keys := make([]int64, len(p.r))
+
+	i := 0
+	for k := range p.r {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
+func (p *mapUser) Delete(userID int64) bool {
+	delete(p.r, userID)
+	return true
 }

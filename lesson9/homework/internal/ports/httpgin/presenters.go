@@ -28,6 +28,11 @@ type adResponse struct {
 	UpdatedTime   time.Time `json:"updated_time"`
 }
 
+type adDeleteResponse struct {
+	ID      int64  `json:"id"`
+	Success string `json:"success"`
+}
+
 type userResponse struct {
 	ID       int64  `json:"id"`
 	Nickname string `json:"nickname"`
@@ -49,6 +54,15 @@ type updateUserRequest struct {
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`
 	UserID   int64  `json:"user_id"`
+}
+
+func DeleteSuccessResponse(id int64) *gin.H {
+	return &gin.H{
+		"data": adDeleteResponse{
+			ID:      id,
+			Success: "Was deleted",
+		},
+	}
 }
 
 func AdSuccessResponse(ad *ads.Ad) *gin.H {

@@ -1,10 +1,10 @@
 package app
 
 import (
-	validator "github.com/dimosha19/myvalidator"
 	"homework9/internal/ads"
 	myerrors "homework9/internal/errors"
 	"homework9/internal/users"
+	"strings"
 	"time"
 )
 
@@ -14,24 +14,28 @@ type App interface {
 	UpdateAd(adID int64, userID int64, title string, text string) (*ads.Ad, error)
 	GetAds(pub string, author int64, date string, title string) (*[]ads.Ad, error)
 	GetAd(adID int64) (*ads.Ad, error)
+	DeleteAd(adID int64, userID int64) error
 
 	CreateUser(nickname string, email string) (*users.User, error)
 	GetUser(userID int64) (*users.User, error)
 	UpdateUser(userID int64, nickname string, email string, authorID int64) (*users.User, error)
+	DeleteUser(userID int64) error
 }
 
 type AdRepository interface {
-	Add(ad ads.Ad) *ads.Ad
+	Add(title string, text string, userID int64) (*ads.Ad, error)
 	Get(adID int64) (*ads.Ad, error)
-	Update(adID int64, ad ads.Ad) (*ads.Ad, error)
-	Size() int64
+	Update(adID int64, userID int64, title string, text string, published bool) (*ads.Ad, error)
+	Delete(adID int64, userID int64) bool
+	Idxs() []int64
 }
 
 type UserRepository interface {
-	Add(user users.User) *users.User
+	Add(nickname string, email string) (*users.User, error)
 	Get(userID int64) (*users.User, error)
-	Update(userID int64, user users.User) (*users.User, error)
-	Size() int64
+	Update(userID int64, nickname string, email string, authorID int64) (*users.User, error)
+	Delete(userID int64) bool
+	Idxs() []int64
 }
 
 func NewApp(adrepo AdRepository, userrepo UserRepository) App {
@@ -48,13 +52,18 @@ func (p *AppModel) CreateAd(title string, text string, userID int64) (*ads.Ad, e
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	res := ads.Ad{ID: p.adrepo.Size(), Title: title, Text: text, AuthorID: int64(userID), PublishedTime: time.Now().UTC(), UpdateTime: time.Now().UTC()}
-	err = validator.Validate(res)
+	t, err := p.adrepo.Add(title, text, userID)
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	t := p.adrepo.Add(res)
 	return t, nil
+}
+
+func (p *AppModel) DeleteAd(adID int64, userID int64) error {
+	if p.adrepo.Delete(adID, userID) {
+		return nil
+	}
+	return myerrors.ErrForbidden
 }
 
 func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ads.Ad, error) {
@@ -66,13 +75,7 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	temp := *t
-	if t.AuthorID != userID {
-		return nil, myerrors.ErrForbidden
-	}
-	temp.Published = published
-	temp.UpdateTime = time.Now().UTC()
-	updated, err := p.adrepo.Update(adID, temp)
+	updated, err := p.adrepo.Update(adID, userID, t.Title, t.Text, published)
 	if err != nil {
 		return nil, err
 	}
@@ -88,14 +91,10 @@ func (p *AppModel) UpdateAd(adID int64, userID int64, title string, text string)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	temp := *t
 	if t.AuthorID != userID {
 		return nil, myerrors.ErrForbidden
 	}
-	temp.Title = title
-	temp.Text = text
-	temp.UpdateTime = time.Now().UTC()
-	updated, err := p.adrepo.Update(adID, temp)
+	updated, err := p.adrepo.Update(adID, userID, title, text, t.Published)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +132,7 @@ func datePredicate(date string, ad ads.Ad) bool {
 }
 
 func titlePredicate(title string, ad ads.Ad) bool {
-	return ad.Title == title || title == ""
+	return strings.Contains(ad.Title, title) || title == ""
 }
 
 func adsPred(pub string, author int64, date string, title string, ad ads.Ad) bool {
@@ -142,9 +141,9 @@ func adsPred(pub string, author int64, date string, title string, ad ads.Ad) boo
 
 func (p *AppModel) GetAds(pub string, author int64, date string, title string) (*[]ads.Ad, error) {
 	var res []ads.Ad
-
-	for i := int64(0); i < p.adrepo.Size(); i++ {
-		t, e := p.adrepo.Get(i)
+	arr := p.adrepo.Idxs()
+	for k := range arr {
+		t, e := p.adrepo.Get(arr[k])
 		if e != nil {
 			return nil, myerrors.ErrBadRequest
 		}
@@ -164,13 +163,11 @@ func (p *AppModel) GetAd(adID int64) (*ads.Ad, error) {
 }
 
 func (p *AppModel) CreateUser(nickname string, email string) (*users.User, error) {
-	res := users.User{ID: p.userrepo.Size(), Nickname: nickname, Email: email}
-	err := validator.Validate(res)
+	res, err := p.userrepo.Add(nickname, email)
 	if err != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	t := p.userrepo.Add(res)
-	return t, nil
+	return res, nil
 }
 
 func (p *AppModel) GetUser(userID int64) (*users.User, error) {
@@ -182,19 +179,20 @@ func (p *AppModel) GetUser(userID int64) (*users.User, error) {
 }
 
 func (p *AppModel) UpdateUser(userID int64, nickname string, email string, authorID int64) (*users.User, error) {
-	t, e := p.userrepo.Get(userID)
+	_, e := p.userrepo.Get(userID)
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
-	temp := *t
-	if t.ID != authorID {
-		return nil, myerrors.ErrForbidden
-	}
-	temp.Nickname = nickname
-	temp.Email = email
-	updated, err := p.userrepo.Update(userID, temp)
+	updated, err := p.userrepo.Update(userID, nickname, email, authorID)
 	if err != nil {
 		return nil, err
 	}
 	return updated, nil
+}
+
+func (p *AppModel) DeleteUser(userID int64) error {
+	if p.userrepo.Delete(userID) {
+		return nil
+	}
+	return myerrors.ErrForbidden
 }
