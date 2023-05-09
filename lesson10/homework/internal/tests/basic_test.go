@@ -9,8 +9,8 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	client := getTestClient()
-	response, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	client := GetTestClient()
+	response, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 	assert.Zero(t, response.Data.UserID)
 	assert.Equal(t, response.Data.Nickname, "dimosha")
@@ -18,9 +18,9 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	user, err := client.getUser("0")
@@ -31,9 +31,9 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserBadId(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.getUser("fg")
@@ -41,9 +41,9 @@ func TestGetUserBadId(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.updateUser("0", "D1", "D2", 0)
@@ -53,9 +53,9 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestUpdateUserBadId(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.updateUser("dsf", "D1", "D2", 23)
@@ -63,9 +63,9 @@ func TestUpdateUserBadId(t *testing.T) {
 }
 
 func TestUpdateUserForbidden(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.updateUser("dsf", "D1", "D2", 0)
@@ -73,9 +73,9 @@ func TestUpdateUserForbidden(t *testing.T) {
 }
 
 func TestUpdateUserBadreq(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.updateUser("0", "", "D2", 0)
@@ -83,8 +83,8 @@ func TestUpdateUserBadreq(t *testing.T) {
 }
 
 func TestCreateAd(t *testing.T) {
-	client := getTestClient()
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	client := GetTestClient()
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 	response, err := client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
@@ -96,9 +96,9 @@ func TestCreateAd(t *testing.T) {
 }
 
 func TestChangeAdStatusBadrequest(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
@@ -109,9 +109,9 @@ func TestChangeAdStatusBadrequest(t *testing.T) {
 }
 
 func TestChangeAdStatusBadID(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.createAd(0, "hello", "world")
@@ -122,9 +122,9 @@ func TestChangeAdStatusBadID(t *testing.T) {
 }
 
 func TestUpdateAd(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
@@ -137,9 +137,9 @@ func TestUpdateAd(t *testing.T) {
 }
 
 func TestUpdateAdStatusBadID(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.createAd(0, "hello", "world")
@@ -150,9 +150,9 @@ func TestUpdateAdStatusBadID(t *testing.T) {
 }
 
 func TestListAds(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
@@ -175,9 +175,9 @@ func TestListAds(t *testing.T) {
 }
 
 func TestListFilterAds(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
@@ -203,9 +203,9 @@ func TestListFilterAds(t *testing.T) {
 }
 
 func TestListFilterAdsBadArgs(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
@@ -228,9 +228,9 @@ func TestListFilterAdsBadArgs(t *testing.T) {
 }
 
 func TestGetAd(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
@@ -246,9 +246,9 @@ func TestGetAd(t *testing.T) {
 }
 
 func TestGetAdStatusBadID(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.createAd(0, "hello", "world")
@@ -259,9 +259,9 @@ func TestGetAdStatusBadID(t *testing.T) {
 }
 
 func TestDeleteAd(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.createAd(0, "hello", "world")
@@ -272,9 +272,9 @@ func TestDeleteAd(t *testing.T) {
 }
 
 func TestDeleteAdForbidden(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.createAd(0, "hello", "world")
@@ -285,9 +285,9 @@ func TestDeleteAdForbidden(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.deleteUser("0")
@@ -295,9 +295,9 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteUserBadID(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	_, err = client.deleteUser("sdcv")
@@ -305,9 +305,9 @@ func TestDeleteUserBadID(t *testing.T) {
 }
 
 func TestDeleteAdBadID(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 	_, err = client.createAd(0, "hello", "world")
 	assert.NoError(t, err)

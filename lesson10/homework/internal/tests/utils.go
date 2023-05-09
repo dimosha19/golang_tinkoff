@@ -45,7 +45,7 @@ type adsResponse struct {
 	Data []adData `json:"data"`
 }
 
-type userResponse struct {
+type UserResponse struct {
 	Data userData `json:"data"`
 }
 
@@ -54,22 +54,22 @@ var (
 	ErrForbidden  = fmt.Errorf("forbidden")
 )
 
-type testClient struct {
+type TestClient struct {
 	client  *http.Client
 	baseURL string
 }
 
-func getTestClient() *testClient {
+func GetTestClient() *TestClient {
 	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New(), userrepo.New()))
 	testServer := httptest.NewServer(server.Handler)
 
-	return &testClient{
+	return &TestClient{
 		client:  testServer.Client(),
 		baseURL: testServer.URL,
 	}
 }
 
-func (tc *testClient) getResponse(req *http.Request, out any) error {
+func (tc *TestClient) getResponse(req *http.Request, out any) error {
 	resp, err := tc.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("unexpected error: %w", err)
@@ -98,7 +98,7 @@ func (tc *testClient) getResponse(req *http.Request, out any) error {
 	return nil
 }
 
-func (tc *testClient) createAd(userID int64, title string, text string) (adResponse, error) {
+func (tc *TestClient) createAd(userID int64, title string, text string) (adResponse, error) {
 	body := map[string]any{
 		"user_id": userID,
 		"title":   title,
@@ -126,7 +126,7 @@ func (tc *testClient) createAd(userID int64, title string, text string) (adRespo
 	return response, nil
 }
 
-func (tc *testClient) deleteAd(adID any, userID int64) (adDeleteResponse, error) {
+func (tc *TestClient) deleteAd(adID any, userID int64) (adDeleteResponse, error) {
 	body := map[string]any{
 		"ad_id":   adID,
 		"user_id": userID,
@@ -153,7 +153,7 @@ func (tc *testClient) deleteAd(adID any, userID int64) (adDeleteResponse, error)
 	return response, nil
 }
 
-func (tc *testClient) deleteAdint(adID int64, userID int64) (adDeleteResponse, error) {
+func (tc *TestClient) deleteAdint(adID int64, userID int64) (adDeleteResponse, error) {
 	body := map[string]any{
 		"ad_id":   adID,
 		"user_id": userID,
@@ -180,7 +180,7 @@ func (tc *testClient) deleteAdint(adID int64, userID int64) (adDeleteResponse, e
 	return response, nil
 }
 
-func (tc *testClient) deleteUser(userID any) (userDeleteResponse, error) {
+func (tc *TestClient) deleteUser(userID any) (userDeleteResponse, error) {
 	body := map[string]any{
 		"ad_id": userID,
 	}
@@ -206,7 +206,7 @@ func (tc *testClient) deleteUser(userID any) (userDeleteResponse, error) {
 	return response, nil
 }
 
-func (tc *testClient) changeAdStatus(userID int64, adID any, published bool) (adResponse, error) {
+func (tc *TestClient) changeAdStatus(userID int64, adID any, published bool) (adResponse, error) {
 	body := map[string]any{
 		"user_id":   userID,
 		"published": published,
@@ -233,7 +233,7 @@ func (tc *testClient) changeAdStatus(userID int64, adID any, published bool) (ad
 	return response, nil
 }
 
-func (tc *testClient) updateAd(userID int64, adID any, title string, text string) (adResponse, error) {
+func (tc *TestClient) updateAd(userID int64, adID any, title string, text string) (adResponse, error) {
 	body := map[string]any{
 		"user_id": userID,
 		"title":   title,
@@ -261,7 +261,7 @@ func (tc *testClient) updateAd(userID int64, adID any, title string, text string
 	return response, nil
 }
 
-func (tc *testClient) createUser(nick string, email string) (userResponse, error) {
+func (tc *TestClient) CreateUser(nick string, email string) (UserResponse, error) {
 	body := map[string]any{
 		"nickname": nick,
 		"email":    email,
@@ -269,26 +269,26 @@ func (tc *testClient) createUser(nick string, email string) (userResponse, error
 
 	data, err := json.Marshal(body)
 	if err != nil {
-		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+		return UserResponse{}, fmt.Errorf("unable to marshal: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, tc.baseURL+"/api/v1/user", bytes.NewReader(data))
 	if err != nil {
-		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+		return UserResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 
-	var response userResponse
+	var response UserResponse
 	err = tc.getResponse(req, &response)
 	if err != nil {
-		return userResponse{}, err
+		return UserResponse{}, err
 	}
 
 	return response, nil
 }
 
-func (tc *testClient) listAds() (adsResponse, error) {
+func (tc *TestClient) listAds() (adsResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads", nil)
 	if err != nil {
 		return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
@@ -303,7 +303,7 @@ func (tc *testClient) listAds() (adsResponse, error) {
 	return response, nil
 }
 
-func (tc *testClient) updateUser(userID any, nickname string, email string, authorID int64) (userResponse, error) {
+func (tc *TestClient) updateUser(userID any, nickname string, email string, authorID int64) (UserResponse, error) {
 	body := map[string]any{
 		"nickname": nickname,
 		"email":    email,
@@ -312,41 +312,41 @@ func (tc *testClient) updateUser(userID any, nickname string, email string, auth
 
 	data, err := json.Marshal(body)
 	if err != nil {
-		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+		return UserResponse{}, fmt.Errorf("unable to marshal: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/user/%s", userID), bytes.NewReader(data))
 	if err != nil {
-		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+		return UserResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 
-	var response userResponse
+	var response UserResponse
 	err = tc.getResponse(req, &response)
 	if err != nil {
-		return userResponse{}, err
+		return UserResponse{}, err
 	}
 
 	return response, nil
 }
 
-func (tc *testClient) getUser(userID any) (userResponse, error) {
+func (tc *TestClient) getUser(userID any) (UserResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/user/%s", userID), nil)
 	if err != nil {
-		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+		return UserResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}
 
-	var response userResponse
+	var response UserResponse
 	err = tc.getResponse(req, &response)
 	if err != nil {
-		return userResponse{}, err
+		return UserResponse{}, err
 	}
 
 	return response, nil
 }
 
-func (tc *testClient) getAd(adID any) (adResponse, error) {
+func (tc *TestClient) getAd(adID any) (adResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%s", adID), nil)
 	if err != nil {
 		return adResponse{}, fmt.Errorf("unable to create request: %w", err)
@@ -361,7 +361,7 @@ func (tc *testClient) getAd(adID any) (adResponse, error) {
 	return response, nil
 }
 
-func (tc *testClient) listFilterAds(pub string, date string, author string) (adsResponse, error) {
+func (tc *TestClient) listFilterAds(pub string, date string, author string) (adsResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads/?pub=%s&date=%s&author=%s", pub, date, author), nil)
 	if err != nil {
 		return adsResponse{}, fmt.Errorf("unable to create request: %w", err)

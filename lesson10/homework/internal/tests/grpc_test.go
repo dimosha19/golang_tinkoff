@@ -67,6 +67,9 @@ func TestGRRPCCreateUser(t *testing.T) {
 	})
 
 	svc := grpcPort.NewService(app.NewApp(adrepo.New(), userrepo.New()))
+	go func() {
+		assert.NoError(t, srv.Serve(lis), "srv.Serve")
+	}()
 	grpc2.RegisterAdServiceServer(srv, svc)
 
 	dialer := func(context.Context, string) (net.Conn, error) {

@@ -8,11 +8,11 @@ import (
 )
 
 func TestChangeStatusAdOfAnotherUser(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
-	_, err = client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err = client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	resp, err := client.createAd(0, "hello", "world")
@@ -23,11 +23,11 @@ func TestChangeStatusAdOfAnotherUser(t *testing.T) {
 }
 
 func TestUpdateAdOfAnotherUser(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
-	_, err = client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err = client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	resp, err := client.createAd(0, "hello", "world")
@@ -38,9 +38,9 @@ func TestUpdateAdOfAnotherUser(t *testing.T) {
 }
 
 func TestCreateAd_ID(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	resp, err := client.createAd(0, "hello", "world")

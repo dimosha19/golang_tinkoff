@@ -6,11 +6,11 @@ import (
 )
 
 func TestChangeAdStatus(t *testing.T) {
-	client := getTestClient()
+	client := GetTestClient()
 
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err := client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
-	_, err = client.createUser("dimosha", "dmitriy@mail.ru")
+	_, err = client.CreateUser("dimosha", "dmitriy@mail.ru")
 	assert.NoError(t, err)
 
 	response, err := client.createAd(0, "hello", "world")
