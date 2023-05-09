@@ -60,9 +60,8 @@ func createUser(client *tests.TestClient) tests.UserResponse {
 	return res
 }
 
-func createUserGRPC(ctx context.Context, client grpc2.AdServiceClient) grpc2.UserResponse {
-	res, _ := client.CreateUser(ctx, &grpc2.CreateUserRequest{Nickname: "Oleg"})
-	return *res
+func createUserGRPC(ctx context.Context, client grpc2.AdServiceClient) {
+	_, _ = client.CreateUser(ctx, &grpc2.CreateUserRequest{Nickname: "Oleg"})
 }
 
 func BenchmarkREST(b *testing.B) {
@@ -75,6 +74,6 @@ func BenchmarkREST(b *testing.B) {
 func BenchmarkGRPC(b *testing.B) {
 	ctx, client := makeClient(b)
 	for i := 0; i < b.N; i++ {
-		_ = createUserGRPC(ctx, client)
+		createUserGRPC(ctx, client)
 	}
 }
