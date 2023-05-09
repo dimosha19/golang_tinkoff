@@ -33,6 +33,11 @@ type adDeleteResponse struct {
 	Success string `json:"success"`
 }
 
+type adDeleteRequest struct {
+	AdID   int64 `json:"ad_id"`
+	UserID int64 `json:"user_id"`
+}
+
 type userResponse struct {
 	ID       int64  `json:"id"`
 	Nickname string `json:"nickname"`

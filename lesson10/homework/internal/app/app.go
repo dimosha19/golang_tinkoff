@@ -35,7 +35,6 @@ type UserRepository interface {
 	Get(userID int64) (*users.User, error)
 	Update(userID int64, nickname string, email string, authorID int64) (*users.User, error)
 	Delete(userID int64) bool
-	Idxs() []int64
 }
 
 func NewApp(adrepo AdRepository, userrepo UserRepository) App {
@@ -72,6 +71,9 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 		return nil, myerrors.ErrBadRequest
 	}
 	t, e := p.adrepo.Get(adID)
+	if t.AuthorID != userID {
+		return nil, myerrors.ErrForbidden
+	}
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}

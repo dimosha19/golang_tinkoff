@@ -65,17 +65,6 @@ func (p *mapUser) Update(userID int64, nickname string, email string, authorID i
 	return &temp, nil
 }
 
-func (p *mapUser) Idxs() []int64 {
-	keys := make([]int64, len(p.r))
-
-	i := 0
-	for k := range p.r {
-		keys[i] = k
-		i++
-	}
-	return keys
-}
-
 func (p *mapUser) Delete(userID int64) bool {
 	delete(p.r, userID)
 	return true

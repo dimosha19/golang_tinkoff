@@ -29,12 +29,6 @@ func createAd(a app.App) gin.HandlerFunc {
 				return
 			}
 		}
-
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
-			return
-		}
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
 	}
 }
@@ -65,13 +59,10 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
 				c.JSON(http.StatusForbidden, ErrorResponse(err))
+			default:
+				c.Status(http.StatusInternalServerError)
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			}
-			return
-		}
-
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
@@ -106,12 +97,10 @@ func updateAd(a app.App) gin.HandlerFunc {
 			case myerrors.ErrForbidden:
 				c.Status(http.StatusForbidden)
 				c.JSON(http.StatusForbidden, ErrorResponse(err))
+			default:
+				c.Status(http.StatusInternalServerError)
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			}
-			return
-		}
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return
 		}
 
@@ -195,9 +184,6 @@ func createUser(a app.App) gin.HandlerFunc {
 				c.JSON(http.StatusBadRequest, ErrorResponse(err))
 				return
 			}
-		}
-
-		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return
@@ -229,15 +215,10 @@ func updateUser(a app.App) gin.HandlerFunc {
 			case myerrors.ErrBadRequest:
 				c.Status(http.StatusBadRequest)
 				c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			case myerrors.ErrForbidden:
-				c.Status(http.StatusForbidden)
-				c.JSON(http.StatusForbidden, ErrorResponse(err))
+			default:
+				c.Status(http.StatusInternalServerError)
+				c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			}
-			return
-		}
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return
 		}
 
@@ -268,8 +249,12 @@ func getUser(a app.App) gin.HandlerFunc {
 
 func deleteAd(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody createAdRequest
-		err := c.ShouldBindJSON(&reqBody)
+		var reqBody adDeleteRequest
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
@@ -280,8 +265,8 @@ func deleteAd(a app.App) gin.HandlerFunc {
 		err = a.DeleteAd(int64(adID), reqBody.UserID)
 
 		if err != nil {
-			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			c.Status(http.StatusForbidden)
+			c.JSON(http.StatusForbidden, ErrorResponse(err))
 			return
 		}
 
@@ -292,7 +277,11 @@ func deleteAd(a app.App) gin.HandlerFunc {
 func deleteUser(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody createAdRequest
-		err := c.ShouldBindJSON(&reqBody)
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
 		adID, err := strconv.Atoi(c.Param("user_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
@@ -300,13 +289,7 @@ func deleteUser(a app.App) gin.HandlerFunc {
 			return
 		}
 
-		err = a.DeleteUser(int64(adID))
-
-		if err != nil {
-			c.Status(http.StatusBadRequest)
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			return
-		}
+		_ = a.DeleteUser(int64(adID))
 
 		c.JSON(http.StatusOK, DeleteSuccessResponse(int64(adID)))
 	}
