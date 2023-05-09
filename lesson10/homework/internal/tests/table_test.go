@@ -29,7 +29,7 @@ func TestChangeAdStatus(t *testing.T) {
 		{"Switch to published", 0, "0", true, true, nil},
 		{"Switch back to unpublished", 0, "0", false, false, nil},
 		{"Switch unpublished to unpublished", 0, "0", false, false, nil},
-		{"User dont exist", 2, "0", false, false, ErrBadRequest},
+		{"User not exist", 2, "0", false, false, ErrBadRequest},
 		{"User not author", 1, "0", false, false, ErrForbidden},
 		{"BadID", 0, "dsfdg", false, false, ErrBadRequest},
 	}
