@@ -13,7 +13,6 @@ import (
 	grpc2 "homework10/internal/ports/grpc"
 	grpcPort "homework10/internal/ports/grpc"
 	"net"
-	"sync"
 	"testing"
 	"time"
 )
@@ -51,7 +50,6 @@ type grpcSuite struct {
 	conn                  *grpc.ClientConn
 	lis                   *bufconn.Listener
 	srv                   *grpc.Server
-	mu                    sync.Mutex
 }
 
 func (suite *grpcSuite) SetupTest() {
