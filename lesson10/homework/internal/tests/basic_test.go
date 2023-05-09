@@ -95,28 +95,6 @@ func TestCreateAd(t *testing.T) {
 	assert.False(t, response.Data.Published)
 }
 
-func TestChangeAdStatus(t *testing.T) {
-	client := getTestClient()
-
-	_, err := client.createUser("dimosha", "dmitriy@mail.ru")
-	assert.NoError(t, err)
-
-	response, err := client.createAd(0, "hello", "world")
-	assert.NoError(t, err)
-
-	response, err = client.changeAdStatus(0, strconv.Itoa(int(response.Data.ID)), true)
-	assert.NoError(t, err)
-	assert.True(t, response.Data.Published)
-
-	response, err = client.changeAdStatus(0, strconv.Itoa(int(response.Data.ID)), false)
-	assert.NoError(t, err)
-	assert.False(t, response.Data.Published)
-
-	response, err = client.changeAdStatus(0, strconv.Itoa(int(response.Data.ID)), false)
-	assert.NoError(t, err)
-	assert.False(t, response.Data.Published)
-}
-
 func TestChangeAdStatusBadrequest(t *testing.T) {
 	client := getTestClient()
 

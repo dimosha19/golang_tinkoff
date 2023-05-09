@@ -71,6 +71,9 @@ func (p *AppModel) UpdateAdStatus(adID int64, userID int64, published bool) (*ad
 		return nil, myerrors.ErrBadRequest
 	}
 	t, e := p.adrepo.Get(adID)
+	if t.AuthorID != userID {
+		return nil, myerrors.ErrForbidden
+	}
 	if e != nil {
 		return nil, myerrors.ErrBadRequest
 	}
