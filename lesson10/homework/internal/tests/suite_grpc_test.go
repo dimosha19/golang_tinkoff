@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -12,17 +13,21 @@ import (
 	grpc2 "homework10/internal/ports/grpc"
 	grpcPort "homework10/internal/ports/grpc"
 	"net"
+	"sync"
 	"testing"
 	"time"
 )
 
-func Client() (*bufconn.Listener, *grpc.Server, context.Context, grpc2.AdServiceClient, context.CancelFunc, *grpc.ClientConn) {
+func Client(t *testing.T) (*bufconn.Listener, *grpc.Server, context.Context, grpc2.AdServiceClient, context.CancelFunc, *grpc.ClientConn) {
 	lis := bufconn.Listen(1024 * 1024)
 
 	srv := grpc.NewServer()
 
 	svc := grpcPort.NewService(app.NewApp(adrepo.New(), userrepo.New()))
 	grpc2.RegisterAdServiceServer(srv, svc)
+	go func() {
+		assert.NoError(t, srv.Serve(lis), "srv.Serve")
+	}()
 
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
@@ -46,6 +51,7 @@ type grpcSuite struct {
 	conn                  *grpc.ClientConn
 	lis                   *bufconn.Listener
 	srv                   *grpc.Server
+	mu                    sync.Mutex
 }
 
 func (suite *grpcSuite) SetupTest() {
@@ -53,10 +59,7 @@ func (suite *grpcSuite) SetupTest() {
 	suite.userID = 0
 	suite.title = "title"
 	suite.text = "text"
-	suite.lis, suite.srv, suite.ctx, suite.client, suite.cancel, suite.conn = Client()
-	go func() {
-		suite.NoError(suite.srv.Serve(suite.lis), "srv.Serve")
-	}()
+	suite.lis, suite.srv, suite.ctx, suite.client, suite.cancel, suite.conn = Client(&testing.T{})
 }
 
 func (suite *grpcSuite) TearDownTest() {
