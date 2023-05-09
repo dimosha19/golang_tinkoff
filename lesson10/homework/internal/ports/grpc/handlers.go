@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -63,16 +62,16 @@ func (s Service) UpdateAd(ctx context.Context, request *UpdateAdRequest) (*AdRes
 func (s Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, error) {
 	pub := ads.Pub
 	if pub != "true" && pub != "false" && pub != "all" {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprint("invalid pub filter"))
+		return nil, status.Error(codes.InvalidArgument, "invalid pub filter")
 	}
 	author, err := strconv.Atoi(ads.Author)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprint("invalid author filter"))
+		return nil, status.Error(codes.InvalidArgument, "invalid author filter")
 	}
 
 	_, err = time.Parse("02-01-06", ads.Date)
 	if ads.Date != "all" && err != nil {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprint("invalid date filter"))
+		return nil, status.Error(codes.InvalidArgument, "invalid date filter")
 	}
 
 	ad, err := s.a.GetAds(ads.Pub, int64(author), ads.Date, ads.Title)
@@ -80,7 +79,7 @@ func (s Service) ListAds(ctx context.Context, ads *GetAds) (*ListAdResponse, err
 		if errors.Is(myerrors.ErrBadRequest, err) {
 			return nil, status.Error(codes.InvalidArgument, myerrors.ErrBadRequest.Error())
 		}
-		return nil, status.Error(codes.Unknown, fmt.Sprint("unknown error"))
+		return nil, status.Error(codes.Unknown, "unknown error")
 	}
 	var response ListAdResponse
 	for i := range *ad {
@@ -126,7 +125,7 @@ func (s Service) GetUser(ctx context.Context, request *GetUserRequest) (*UserRes
 func (s Service) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*Success, error) {
 	err := s.a.DeleteUser(request.Id)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprint("internal error"))
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 	return &Success{
 		Success: "user was successfully deleted",
@@ -136,7 +135,7 @@ func (s Service) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*S
 func (s Service) DeleteAd(ctx context.Context, request *DeleteAdRequest) (*Success, error) {
 	err := s.a.DeleteAd(request.AdId, request.AuthorId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprint("internal error"))
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 	return &Success{
 		Success: "ad was successfully deleted",

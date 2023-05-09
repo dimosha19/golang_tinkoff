@@ -289,7 +289,7 @@ func TestDeleteAd(t *testing.T) {
 	_, err = client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.deleteAd("0", 0)
+	_, err = client.deleteAdint(0, 0)
 	assert.NoError(t, err)
 }
 
@@ -302,7 +302,7 @@ func TestDeleteAdForbidden(t *testing.T) {
 	_, err = client.createAd(0, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.deleteAd("0", 1)
+	_, err = client.deleteAdint(0, 1)
 	assert.ErrorIs(t, err, ErrForbidden)
 }
 

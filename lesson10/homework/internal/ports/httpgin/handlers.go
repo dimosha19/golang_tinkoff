@@ -250,7 +250,11 @@ func getUser(a app.App) gin.HandlerFunc {
 func deleteAd(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody adDeleteRequest
-		err := c.ShouldBindJSON(&reqBody)
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
 		adID, err := strconv.Atoi(c.Param("ad_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
@@ -273,7 +277,11 @@ func deleteAd(a app.App) gin.HandlerFunc {
 func deleteUser(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody createAdRequest
-		err := c.ShouldBindJSON(&reqBody)
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
 		adID, err := strconv.Atoi(c.Param("user_id"))
 		if err != nil {
 			c.Status(http.StatusBadRequest)
